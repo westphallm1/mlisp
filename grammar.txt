@@ -1,0 +1,52 @@
+LPAREN FUNC ARGS RPAREN
+
+stmts -> stmt stmts
+      | NULL
+
+stmt -> LPAREN func args RPAREN
+
+args -> arg args
+     | NULL
+
+arg -> literal
+     | stmt
+
+literal -> INT 
+    | FLOAT 
+    | ID 
+    | TRUE 
+    | FALSE 
+    | NIL 
+    | ELSE
+
+func -> 
+//control flow
+if
+| while
+| def
+| ret 
+| args
+| call
+//arithmetic
+| =
+| ==
+| >
+| <
+| &
+| |
+| !
+| ~
+| +
+| ++
+| -
+| --
+| *
+| /
+// io
+| sstart
+| swrite
+| sread
+| gpmode
+| gpset
+| gpread
+| sleep

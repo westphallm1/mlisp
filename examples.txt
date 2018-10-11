@@ -1,0 +1,34 @@
+/* blink */
+(gpmode 13 OUT)
+(while true
+  (gpset 13 HIGH)
+  (sleep 1000)
+  (gpset 13 LOW)
+  (sleep 1000)
+)
+
+/* fibonacci */
+(def fibb (args a) 
+  (if ( < a 2)
+    (return 1)
+  else
+    (return (call fibb (- a 1)))
+  )
+)
+
+/* iterative fibonacci */
+(= i 1)
+(= a 1)
+(= b 1)
+(= tmp 1)
+(while (< i n)
+  (= b (+ a b))
+  (= a (- b a)) 
+  (++ i)
+)
+
+/* hello, name */
+
+(sstart 9600)
+(sread a)
+(swrite "Hello, " a "!\n ")
