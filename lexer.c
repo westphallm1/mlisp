@@ -1,34 +1,34 @@
 #include "keywords.h"
+#include "mlisp.h"
 #include <stdint.h>
+#include <stdio.h>
 
-char * CURR_SYM;
-int SYM_LENGTH;
 /* */
-int get_alpha_token(char ** stream){
+int __get_alpha_token(char * stream, char ** saveptr){
     uint32_t token = 0;
     int lshift = 0;
-    while(**stream >= 'a' && **stream <= 'z'){
+    while(*stream >= 'a' && *stream <= 'z'){
         if(lshift < 32){
-            token += ((uint32_t) **stream)<<lshift;
+            token += ((uint32_t) *stream)<<lshift;
             lshift += 8;
         }
-        *stream += 1;
+        stream += 1;
     }
-    SYM_LENGTH = *stream - CURR_SYM;
+    *saveptr = stream;
     return token;
 }
 
-int get_strlit_token(char ** stream){
-    *stream += 1;
-    while(**stream > 0 && **stream != '"'){
-        *stream += 1;
+int __get_strlit_token(char * stream, char ** saveptr){
+    stream += 1;
+    while(*stream > 0 && *stream != '"'){
+        stream += 1;
     }
-    if(**stream == 0){
+    if(*stream == 0){
         /* unterminated string literal */
         return -1;
     } else {
-        *stream += 1;
-        SYM_LENGTH = *stream - CURR_SYM;
+        stream += 1;
+        *saveptr = stream;
         return STRLIT;
     }
 }
@@ -37,31 +37,33 @@ int get_strlit_token(char ** stream){
  * The token for a character is the uint32 consisting of the sum of its first 
  * 4 (or fewer) ascii characters
  */
-int get_token(char ** stream){
+int get_token_r(char * stream, char ** saveptr){
     
     char start;
     char next;
     char next_good;
     uint32_t token;
 
-    /* eat whitespace */
-    if(**stream == 0)
-        return 0;
-    while(**stream <= ' '){
-        *stream+=1;
+    if(stream == NULL){
+        stream = *saveptr;
     }
-    CURR_SYM = *stream;
-    start = **stream;
-    next = *(*stream + 1);
+    /* eat whitespace */
+    if(*stream == 0)
+        return 0;
+    while(*stream <= ' '){
+        stream+=1;
+    }
+    start = *stream;
+    next = *(stream + 1);
     token = (uint32_t) start;
     
     if(start == '"'){
         /* string literals */
-        return get_strlit_token(stream);
+        return __get_strlit_token(stream,saveptr);
     }
     if(start >= 'a' && start <= 'z'){
         /* all alphabetic tokens */
-        return get_alpha_token(stream);
+        return __get_alpha_token(stream,saveptr);
     }
 
     /* one and two character tokens */
@@ -71,21 +73,21 @@ int get_token(char ** stream){
             /* '<=' and '>=' */
             next_good = next == '=';
             token += (next_good)?'='<<8:0;
-            *stream += (next_good)?1:0;
+            stream += (next_good)?1:0;
         case '+':
         case '-':
         case '=':
             /* '++', '--', '<<', '>>', and '==' */
             next_good = next == start;
             token += (next_good)?next<<8:0;
-            *stream += (next_good)?1:0;
+            stream += (next_good)?1:0;
             break;
         default:
             /* all single character tokens */
             break;
     }
-    *stream+=1;
-    SYM_LENGTH = *stream - CURR_SYM;
+    stream+=1;
+    *saveptr = stream;
     return token;
 }
 
@@ -93,16 +95,9 @@ int get_token(char ** stream){
  * Get the next token, then reset the stream head to its previous position
  * Not wildly efficient
  */
-int peek_token(char ** stream){
-    int result = get_token(stream);
-    *stream = CURR_SYM;
+int peek_token_r(char * stream, char ** saveptr){
+    char * head = *saveptr;
+    int result = get_token_r(stream,saveptr);
+    *saveptr = head;
     return result;
-}
-
-int main(){
-    char * lex_me = "(! hello \"hello world\" world)";
-    char * curr = lex_me;
-    uint32_t token;
-    while(token = get_token(&curr)){
-    }
 }
