@@ -33,6 +33,16 @@ int __get_strlit_token(char * stream, char ** saveptr){
     }
 }
 
+int __get_numeric_token(char * stream, char **saveptr){
+    char is_float = 0;
+    while(*stream=='.' || (*stream >='0' && *stream <= '9')){
+        is_float |= *stream=='.';
+        stream+=1;
+    }
+    *saveptr = stream;
+    return (is_float)?FLOAT:INT;
+}
+
 /*
  * The token for a character is the uint32 consisting of the sum of its first 
  * 4 (or fewer) ascii characters
@@ -61,10 +71,15 @@ int get_token_r(char * stream, char ** saveptr){
         /* string literals */
         return __get_strlit_token(stream,saveptr);
     }
+    if(start == '.' || (start >='0' && start <='9')){
+        /* numeric literals  */
+        return __get_numeric_token(stream,saveptr);
+    }
     if(start >= 'a' && start <= 'z'){
         /* all alphabetic tokens */
         return __get_alpha_token(stream,saveptr);
     }
+
 
     /* one and two character tokens */
     switch (start) {
