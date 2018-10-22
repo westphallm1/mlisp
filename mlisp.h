@@ -23,8 +23,10 @@ struct atom {
 };
 
 
+/* lexer.h */
 int get_token_r(char * stream, char ** saveptr);
 int peek_token_r(char * stream, char ** saveptr);
+struct ast_node * build_tree(char * stream, char **saveptr);
 
 
 #ifdef DEBUG

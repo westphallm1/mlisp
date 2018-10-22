@@ -5,17 +5,35 @@
 #include <stdio.h>
 #include <string.h>
 
+
+
+
+//TODO: Use stack instead of malloc
 void * exec_prog(struct ast_node * node);
+
+int atoi_l(struct atom * atom_child){
+    int value;
+    char tmp_term;
+    char * str;
+    int len;
+    str = atom_child -> strval;
+    len = atom_child -> len;
+    tmp_term = *(str + len);
+    *(str + len) = '\0';
+    value = atoi(str);
+    *(str + len) = tmp_term;
+    return value;
+}
 
 void do_sum(struct ast_node * node, void ** data, int argc){
     int * to_write;
+    if(node == NULL)
+        return;
     if(argc == 0){
         *data = malloc(sizeof(int));
         to_write = (int*)*data;
         *to_write = 0;
     }
-    if(node == NULL)
-        return;
 
     to_write = (int*)*data;
     void * arg_data = exec_prog(node);
@@ -25,13 +43,13 @@ void do_sum(struct ast_node * node, void ** data, int argc){
 
 void do_prod(struct ast_node * node, void ** data, int argc){
     int * to_write;
+    if(node == NULL)
+        return;
     if(argc == 0){
         *data = malloc(sizeof(int));
         to_write = (int*)*data;
         *to_write = 1;
     }
-    if(node == NULL)
-        return;
 
     to_write = (int*)*data;
     void * arg_data = exec_prog(node);
@@ -39,6 +57,50 @@ void do_prod(struct ast_node * node, void ** data, int argc){
     free(arg_data);
 }
 
+void do_minus(struct ast_node * node, void ** data, int argc){
+    int * to_write;
+    if(node == NULL)
+        return;
+    if(argc == 0){
+        *data = malloc(sizeof(int));
+        to_write = (int*)*data;
+        *to_write = 0;
+    }
+
+    to_write = (int*)*data;
+    void * arg_data = exec_prog(node);
+    int operand = *(int*)arg_data;
+    *to_write = (argc == 0)?operand: *to_write - operand;
+    free(arg_data);
+}
+
+void do_divide(struct ast_node * node, void ** data, int argc){
+    int * to_write;
+    if(node == NULL)
+        return;
+    if(argc == 0){
+        *data = malloc(sizeof(int));
+        to_write = (int*)*data;
+        *to_write = 0;
+    }
+
+    to_write = (int*)*data;
+    void * arg_data = exec_prog(node);
+    int operand = *(int*)arg_data;
+    *to_write = (argc == 0)?operand: *to_write /operand;
+    free(arg_data);
+}
+
+void (*operators[])(struct ast_node*,void**,int) = {
+    [PLUS] = do_sum,
+    [TIMES] = do_prod,
+    [MINUS] = do_minus,
+    [DIVIDE] = do_divide
+};
+
+int (*atom_handlers[])(struct atom*) = {
+    [INT] = atoi_l
+};
 /* use void * return type to return arbitrary data
  * expect higher level node to know what to do with it
  */
@@ -53,10 +115,7 @@ void * exec_prog(struct ast_node * node){
         struct ast_node * curr = node->next->next;
         int argc = 0;
         do {
-            if(cmd_atom -> token == PLUS)
-                do_sum(curr,&data,argc++);
-            else if(cmd_atom -> token == TIMES)
-                do_prod(curr,&data,argc++);
+            operators[cmd_atom -> token](curr,&data,argc++);
             curr = curr->next;
         } while(curr != NULL);
 
@@ -64,10 +123,12 @@ void * exec_prog(struct ast_node * node){
     } else if(!node->is_atom && node->list_child->is_root){
         return exec_prog(node->list_child);
     } else if(node->is_atom) {
-        data = malloc(sizeof(int));
-        int * int_data = (int *)data;
-        *int_data = 2;
-        return data;
+        if(node -> atom_child -> token == INT){
+            data = malloc(sizeof(int));
+            int * int_data = (int *)data;
+            *int_data = atoi_l(node->atom_child);
+            return data;
+        }
     } else {
         ERR("Unknown node type");
     }
