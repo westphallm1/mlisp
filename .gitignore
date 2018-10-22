@@ -1,4 +1,5 @@
 *.o
 parser
 lexer
+interpreter
 a.out
