@@ -5,17 +5,20 @@
 
 /* */
 int __get_alpha_token(char * stream, char ** saveptr){
-    uint32_t token = 0;
-    int lshift = 0;
+    char to_hash[4] = {0,0,0,0};
+    char * start_pos = stream;
     while(*stream >= 'a' && *stream <= 'z'){
-        if(lshift < 32){
-            token += ((uint32_t) *stream)<<lshift;
-            lshift += 8;
+        if(stream - start_pos < 4){
+            to_hash[stream - start_pos] = *stream;
         }
         stream += 1;
     }
     *saveptr = stream;
-    return token;
+    if(stream - start_pos == 1){
+        return ID;
+    } else {
+        return CHR_CODE(to_hash[0],to_hash[1],to_hash[2],to_hash[3]);
+    }
 }
 
 int __get_strlit_token(char * stream, char ** saveptr){

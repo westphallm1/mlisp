@@ -1,6 +1,6 @@
 #ifndef KEYWORDS_H
 #define KEYWORDS_H
-#define CHR_CODE(a,b,c,d) a + (b<<8) + (c<<16) + (d<<24)
+#define CHR_CODE(a,b,c,d) (a + (b<<7) + (c<<14) + (d<<21)) % 207
 
 #define LPAREN CHR_CODE('(',0,0,0)
 #define RPAREN CHR_CODE(')',0,0,0)
@@ -43,5 +43,4 @@
 #define STRLIT CHR_CODE('s','t','r','l')
 #define INT CHR_CODE('i','n','t',0)
 #define FLOAT CHR_CODE('f','l','o','a')
-
 #endif /* KEYWORDS_H */
