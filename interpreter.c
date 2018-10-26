@@ -274,6 +274,7 @@ int main(int argc, char ** argv){
 #endif /* DEBUG */
             result = (int *)exec_prog(node,-1);
         }
+        free_ast();
         node = build_tree(saveptr,&saveptr);
     }
 }

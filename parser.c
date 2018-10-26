@@ -7,8 +7,28 @@
 
 #define MAX_ARGS 10
 
-#ifdef DEBUG
 
+#define MAX_NODES 64
+union ast_entry{
+    struct atom atom;
+    struct ast_node node;
+};
+union ast_entry ENTRIES[MAX_NODES];
+union ast_entry * entry_ptr = ENTRIES;
+
+void * alloc_entry(){
+    if(++entry_ptr - ENTRIES == MAX_NODES)
+        return NULL;
+    return entry_ptr - 1;
+}
+
+
+void free_ast(){
+    printf("ENTRIES USED: %ld\n",entry_ptr-ENTRIES);
+    entry_ptr = ENTRIES;
+}
+
+#ifdef DEBUG
 void print_prog(struct ast_node * node){
     while(node != NULL){
         if(node -> is_root){
@@ -28,7 +48,7 @@ void print_prog(struct ast_node * node){
 #endif /*DEBUG*/
 
 struct atom * build_atom(uint32_t token, char * start, char * stop){
-    struct atom * atom = malloc(sizeof (struct atom));
+    struct atom * atom = alloc_entry(); 
     if(atom == NULL){
         ERR("Out of memory");
     }
@@ -53,7 +73,7 @@ struct ast_node * build_tree(char * stream, char **saveptr){
         return NULL;
     }
 
-    if((lnode = malloc(sizeof (struct ast_node))) == NULL){
+    if((lnode = alloc_entry()) == NULL){
         ERR("Out of memory");
     }
     lnode -> is_root = 0;
@@ -61,7 +81,7 @@ struct ast_node * build_tree(char * stream, char **saveptr){
     
     if(token == LPAREN){
         /*handle a list */
-        if((lchild = malloc(sizeof (struct ast_node))) == NULL){
+        if((lchild = alloc_entry()) == NULL){
             ERR("Out of memory");
         }
         curr = lchild;

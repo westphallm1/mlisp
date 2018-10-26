@@ -6,27 +6,28 @@
 #define ERR(msg)printf("%s\n",msg);exit(1);
 
 struct ast_node {
-    struct ast_node * next; /* Next argument in the list */
     char is_atom; /* arguments can be either atom or list */
     char is_root; /* is this node the start of a command? */
-    struct ast_node * list_child; /* if argument is a list */
-    struct atom * atom_child; /* if argument is an atom */
+    union {
+        struct ast_node * list_child; /* if argument is a list */
+        struct atom * atom_child; /* if argument is an atom */
+    };
+    struct ast_node * next; /* Next argument in the list */
 };
 
 struct atom {
-    uint32_t token;
-    int ival;
-    float fval;
+    unsigned char token;
+    char len;
     char * strval;
-    int len;
 };
 
 
 /* lexer.h */
 int get_token_r(char * stream, char ** saveptr);
 int peek_token_r(char * stream, char ** saveptr);
+/* parser.h */
 struct ast_node * build_tree(char * stream, char **saveptr);
-
+void free_ast(void);
 
 #ifdef DEBUG
 void print_prog(struct ast_node * node);
