@@ -88,16 +88,18 @@ int get_token_r(char * stream, char ** saveptr){
     switch (start) {
         case '<':
         case '>':
-            /* '<=' and '>=' */
-            next_good = next == '=';
-            token += (next_good)?'='<<8:0;
-            stream += (next_good)?1:0;
         case '+':
+        case '*':
         case '-':
+        case '/':
+            /* '<=', '>=', '+=', '-=', '*=', '/=' */
+            next_good = next == '=';
+            token += (next_good)?'='<<7:0;
+            stream += (next_good)?1:0;
         case '=':
             /* '++', '--', '<<', '>>', and '==' */
             next_good = next == start;
-            token += (next_good)?next<<8:0;
+            token += (next_good)?next<<7:0;
             stream += (next_good)?1:0;
             break;
         default:
@@ -106,7 +108,7 @@ int get_token_r(char * stream, char ** saveptr){
     }
     stream+=1;
     *saveptr = stream;
-    return token;
+    return token%207;
 }
 
 /*

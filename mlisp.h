@@ -3,8 +3,7 @@
 #ifndef MLISP_H
 #define MLISP_H
 
-#define DEBUG
-#define ERR(msg)printf("%s\n",msg);return NULL;
+#define ERR(msg)printf("%s\n",msg);exit(1);
 
 struct ast_node {
     struct ast_node * next; /* Next argument in the list */
