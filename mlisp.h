@@ -2,6 +2,7 @@
 
 #ifndef MLISP_H
 #define MLISP_H
+#include "config.h"
 
 #define ERR(msg)printf("%s\n",msg);exit(1);
 

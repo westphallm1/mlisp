@@ -5,28 +5,34 @@
 #include <stdio.h>
 #include <string.h>
 
-#define MAX_ARGS 10
-
-
-#define MAX_NODES 64
 union ast_entry{
     struct atom atom;
     struct ast_node node;
 };
-union ast_entry ENTRIES[MAX_NODES];
+#ifdef STATIC
+
+union ast_entry ENTRIES[STATIC_MAX_NODES];
 union ast_entry * entry_ptr = ENTRIES;
 
 void * alloc_entry(){
-    if(++entry_ptr - ENTRIES == MAX_NODES)
+    if(++entry_ptr - ENTRIES == STATIC_MAX_NODES)
         return NULL;
     return entry_ptr - 1;
 }
-
-
 void free_ast(){
-    printf("ENTRIES USED: %ld\n",entry_ptr-ENTRIES);
     entry_ptr = ENTRIES;
 }
+
+#else
+
+void * alloc_entry(){
+    return malloc(sizeof(ast_entry));
+}
+void free_ast(){
+}
+
+#endif /* STATIC */
+
 
 #ifdef DEBUG
 void print_prog(struct ast_node * node){
@@ -57,6 +63,10 @@ struct atom * build_atom(uint32_t token, char * start, char * stop){
         start++;
     atom -> strval = start;
     atom -> len = stop - start;
+    if(token == STRLIT){
+        atom->strval += 1;
+        atom -> len -= 2;
+    }
     return atom;
 }
 

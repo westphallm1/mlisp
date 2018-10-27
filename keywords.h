@@ -50,4 +50,5 @@
 #define FLOAT CHR_CODE('f','l','o','a') // 62
 #define ARGV CHR_CODE('a','r','g','v') // 70
 #define ARGC CHR_CODE('a','r','g','c') // 26
+#define EXIT CHR_CODE('e','x','i','t') // 6
 #endif /* KEYWORDS_H */
