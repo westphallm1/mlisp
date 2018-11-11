@@ -1,0 +1,5 @@
+(= a 0)
+(while (< a (argc))
+  (swrite (argv a))
+  (+= a 1)
+)

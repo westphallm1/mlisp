@@ -37,7 +37,7 @@ void free_ast(){
 #ifdef DEBUG
 void print_prog(struct ast_node * node){
     while(node != NULL){
-        if(node -> is_root){
+        if(node -> root_type){
             printf(":");
         } else if(node -> is_atom){
             if(node -> atom_child !=NULL){
@@ -86,7 +86,7 @@ struct ast_node * build_tree(char * stream, char **saveptr){
     if((lnode = alloc_entry()) == NULL){
         ERR("Out of memory");
     }
-    lnode -> is_root = 0;
+    lnode -> root_type = 0;
     lnode -> next = NULL;
     
     if(token == LPAREN){
@@ -95,7 +95,7 @@ struct ast_node * build_tree(char * stream, char **saveptr){
             ERR("Out of memory");
         }
         curr = lchild;
-        curr -> is_root = 1;
+        curr -> root_type = peek_token_r(NULL,saveptr);
         curr -> is_atom = 0;
         curr -> atom_child = NULL;
         while((token = peek_token_r(NULL,saveptr)) != RPAREN){
@@ -108,7 +108,7 @@ struct ast_node * build_tree(char * stream, char **saveptr){
         get_token_r(NULL,saveptr);
 
         lnode -> list_child = lchild;
-        lnode -> is_root = 0;
+        lnode -> root_type = 0;
         lnode -> is_atom = 0;
     } else if (token == RPAREN){
         /*shouldn't be encountered outside list */
@@ -117,7 +117,7 @@ struct ast_node * build_tree(char * stream, char **saveptr){
         /* handle an atom */
         atom = build_atom(token,stream,*saveptr);
         lnode -> atom_child = atom;
-        lnode -> is_root = 0;
+        lnode -> root_type = 0;
         lnode -> is_atom = 1;
     }
 

@@ -8,7 +8,7 @@
 
 struct ast_node {
     char is_atom; /* arguments can be either atom or list */
-    char is_root; /* is this node the start of a command? */
+    unsigned char root_type; /* is this node the start of a command? */
     union {
         struct ast_node * list_child; /* if argument is a list */
         struct atom * atom_child; /* if argument is an atom */

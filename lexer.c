@@ -14,10 +14,11 @@ int __get_alpha_token(char * stream, char ** saveptr){
         stream += 1;
     }
     *saveptr = stream;
-    if(stream - start_pos == 1){
-        return ID;
-    } else {
+    int token = CHR_CODE_LONG(to_hash[0],to_hash[1],to_hash[2],to_hash[3]);
+    if(is_kw(token)){
         return CHR_CODE(to_hash[0],to_hash[1],to_hash[2],to_hash[3]);
+    } else {
+        return ID;
     }
 }
 
@@ -108,7 +109,7 @@ int get_token_r(char * stream, char ** saveptr){
     }
     stream+=1;
     *saveptr = stream;
-    return token%207;
+    return token%HASH_VAL;
 }
 
 /*

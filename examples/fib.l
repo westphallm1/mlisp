@@ -1,11 +1,11 @@
 (if (argc)
-  (= n (argv 0))
+  (= n (toint (argv 0)))
 else
   (swrite "Usage: fib.l <max term>")
   (exit 1)
 )
 
-(= a 1)
+(= a 0)
 (= b 1)
 (while n
   (swrite b)

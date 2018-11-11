@@ -1,54 +1,91 @@
 #ifndef KEYWORDS_H
 #define KEYWORDS_H
-#define CHR_CODE(a,b,c,d) (a + (b<<7) + (c<<14) + (d<<21)) % 207
+#define HASH_VAL 197
+#define LONG_HASH_VAL 65521
+#define CHR_CODE(a,b,c,d) (a + (b<<7) + (c<<14) + (d<<21)) % HASH_VAL
+#define CHR_CODE_LONG(a,b,c,d) (a + (b<<7) + (c<<14) + (d<<21)) % LONG_HASH_VAL
+int is_kw(int token);
 
-#define LPAREN CHR_CODE('(',0,0,0) // 37
-#define RPAREN CHR_CODE(')',0,0,0) // 38
-#define TRUE CHR_CODE('t','r','u','e') // 135
-#define FALSE CHR_CODE('f','a','l','s') // 19
-#define NIL CHR_CODE('n','i','l',0) // 155
-#define IF CHR_CODE('i','f',0,0) // 183
-#define ELSE CHR_CODE('e','l','s','e') // 118
-#define WHILE CHR_CODE('w','h','i','l') // 180
-#define DEF CHR_CODE('d','e','f',0) // 68
-#define RET CHR_CODE('r','e','t',0) // 102
-#define ARGS CHR_CODE('a','r','g','s') // 172
-#define CALL CHR_CODE('c','a','l','l') // 185
-#define ASSIGN CHR_CODE('=',0,0,0) // 58
-#define PLUSASSIGN CHR_CODE('+','=',0,0) // 48
-#define TIMESASSIGN CHR_CODE('*','=',0,0) // 47
-#define MINUSASSIGN CHR_CODE('-','=',0,0) // 50
-#define DIVASSIGN CHR_CODE('/','=',0,0) // 52
-#define EQUALS CHR_CODE('=','=',0,0) // 66
-#define LESS CHR_CODE('<',0,0,0) // 57
-#define GREATER CHR_CODE('>',0,0,0) // 59
-#define LESSEQ CHR_CODE('<','=',0,0) // 65
-#define GREATEREQ CHR_CODE('>','=',0,0) // 67
-#define AND CHR_CODE('&',0,0,0) // 35
-#define OR CHR_CODE('|',0,0,0) // 121
-#define NOT CHR_CODE('~',0,0,0) // 123
-#define NEGATE CHR_CODE('!',0,0,0) // 30
-#define PLUS CHR_CODE('+',0,0,0) // 40
-#define INC CHR_CODE('+','+',0,0) // 21
-#define MINUS CHR_CODE('-',0,0,0) // 42
-#define DEC CHR_CODE('-','-',0,0) // 72
-#define LSHIFT CHR_CODE('<','<',0,0) // 144
-#define RSHIFT CHR_CODE('>','>',0,0) // 195
-#define TIMES CHR_CODE('*',0,0,0) // 39
-#define MOD CHR_CODE('%',0,0,0) // 34
-#define DIVIDE CHR_CODE('/',0,0,0) // 44
-#define SSTART CHR_CODE('s','s','t','a') // 91
-#define SWRITE CHR_CODE('s','w','r','i') // 200
-#define SREAD CHR_CODE('s','r','e','a') // 119
-#define GPMODE CHR_CODE('g','p','m','o') // 175
-#define GPSET CHR_CODE('g','p','s','e') // 11
-#define GPREAD CHR_CODE('g','p','r','e') // 187
-#define SLEEP CHR_CODE('s','l','e','e') // 112
-#define ID CHR_CODE('i','d',0,0) // 134
-#define STRLIT CHR_CODE('s','t','r','l') // 128
-#define INT CHR_CODE('i','n','t',0) // 3
-#define FLOAT CHR_CODE('f','l','o','a') // 62
-#define ARGV CHR_CODE('a','r','g','v') // 70
-#define ARGC CHR_CODE('a','r','g','c') // 26
-#define EXIT CHR_CODE('e','x','i','t') // 6
+#define LPAREN 40
+#define LPAREN_LONG 40
+#define RPAREN 41
+#define RPAREN_LONG 41
+#define IF 159
+#define IF_LONG 13161
+#define ELSE 109
+#define ELSE_LONG 46456
+#define WHILE 91
+#define WHILE_LONG 16524
+#define ASSIGN 61
+#define ASSIGN_LONG 61
+#define PLUSASSIGN 168
+#define PLUSASSIGN_LONG 7851
+#define TIMESASSIGN 167
+#define TIMESASSIGN_LONG 7850
+#define MINUSASSIGN 170
+#define MINUSASSIGN_LONG 7853
+#define DIVASSIGN 172
+#define DIVASSIGN_LONG 7855
+#define EQUALS 186
+#define EQUALS_LONG 7869
+#define LESS 60
+#define LESS_LONG 60
+#define GREATER 62
+#define GREATER_LONG 62
+#define LESSEQ 185
+#define LESSEQ_LONG 7868
+#define GREATEREQ 187
+#define GREATEREQ_LONG 7870
+#define AND 38
+#define AND_LONG 38
+#define OR 124
+#define OR_LONG 124
+#define NOT 126
+#define NOT_LONG 126
+#define NEGATE 33
+#define NEGATE_LONG 33
+#define PLUS 43
+#define PLUS_LONG 43
+#define MINUS 45
+#define MINUS_LONG 45
+#define LSHIFT 57
+#define LSHIFT_LONG 7740
+#define RSHIFT 118
+#define RSHIFT_LONG 7998
+#define TIMES 42
+#define TIMES_LONG 42
+#define MOD 37
+#define MOD_LONG 37
+#define DIVIDE 47
+#define DIVIDE_LONG 47
+#define SWRITE 73
+#define SWRITE_LONG 33414
+#define SREAD 81
+#define SREAD_LONG 12505
+#define GPMODE 113
+#define GPMODE_LONG 18987
+#define GPSET 32
+#define GPSET_LONG 46970
+#define GPREAD 196
+#define GPREAD_LONG 30586
+#define SLEEP 55
+#define SLEEP_LONG 13657
+#define ID 100
+#define ID_LONG 12905
+#define STRLIT 147
+#define STRLIT_LONG 34470
+#define INT 86
+#define INT_LONG 14620
+#define FLOAT 24
+#define FLOAT_LONG 44522
+#define ARGV 183
+#define ARGV_LONG 55335
+#define ARGC 106
+#define ARGC_LONG 46215
+#define TOINT 173
+#define TOINT_LONG 18377
+#define STRCMP 152
+#define STRCMP_LONG 30150
+#define EXIT 59
+#define EXIT_LONG 22394
 #endif /* KEYWORDS_H */

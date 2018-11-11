@@ -1,4 +1,4 @@
-(= n (argv 0))
+(= n (toint(argv 0)))
 
 (while (> n 1)
   (if (% n 2)
