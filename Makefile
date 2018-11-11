@@ -12,5 +12,8 @@ lexer.o: lexer.c mlisp.h keywords.h config.h
 is_kw.o: is_kw.c keywords.h config.h
 	gcc $(CFLAGS) -c is_kw.c
 
+keywords.h: keywords.txt
+	python3 gen_kw.py keywords.txt keywords.h is_kw.c
+
 clean:
-	rm -f *.o interpreter parser lexer
+	rm -f  keywords.h is_kw.c *.o interpreter parser lexer
