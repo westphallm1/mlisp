@@ -105,6 +105,7 @@ MATH_FUNCTION(greater,0,*to_write = (argc == 0)? operand: *to_write > operand);
 MATH_FUNCTION(le,0,*to_write = (argc == 0)? operand: *to_write <= operand);
 MATH_FUNCTION(ge,0,*to_write = (argc == 0)? operand: *to_write >= operand);
 MATH_FUNCTION(equals,0,*to_write = (argc == 0)? operand: *to_write == operand);
+MATH_FUNCTION(notequals,0,*to_write = (argc == 0)? operand: *to_write != operand);
 
 #define ASSIGN_FUNCTION(name,operation)\
 void do_##name(struct ast_node * node, void ** data, int argc, int context){\
@@ -315,6 +316,7 @@ void (*operators[])(struct ast_node*,void**,int,int) = {
     [LESSEQ] = do_le,
     [GREATEREQ] = do_ge,
     [EQUALS] = do_equals,
+    [NOTEQUALS] = do_notequals,
     [WHILE] = do_while,
     [IF] = do_if,
     [ARGV] = do_argv,

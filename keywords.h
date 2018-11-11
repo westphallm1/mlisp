@@ -28,6 +28,8 @@ int is_kw(int token);
 #define DIVASSIGN_LONG 7855
 #define EQUALS 186
 #define EQUALS_LONG 7869
+#define NOTEQUALS 158
+#define NOTEQUALS_LONG 7841
 #define LESS 60
 #define LESS_LONG 60
 #define GREATER 62
@@ -50,10 +52,6 @@ int is_kw(int token);
 #define PLUS_LONG 43
 #define MINUS 45
 #define MINUS_LONG 45
-#define LSHIFT 57
-#define LSHIFT_LONG 7740
-#define RSHIFT 118
-#define RSHIFT_LONG 7998
 #define TIMES 42
 #define TIMES_LONG 42
 #define MOD 37
@@ -64,8 +62,6 @@ int is_kw(int token);
 #define SWRITE_LONG 33414
 #define SREAD 81
 #define SREAD_LONG 12505
-#define SLEEP 55
-#define SLEEP_LONG 13657
 #define TOINT 173
 #define TOINT_LONG 18377
 #define STRCMP 152

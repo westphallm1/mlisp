@@ -13,6 +13,7 @@ int is_kw(int token){
     case MINUSASSIGN_LONG:
     case DIVASSIGN_LONG:
     case EQUALS_LONG:
+    case NOTEQUALS_LONG:
     case LESS_LONG:
     case GREATER_LONG:
     case LESSEQ_LONG:
@@ -24,14 +25,11 @@ int is_kw(int token){
     case XOR_LONG:
     case PLUS_LONG:
     case MINUS_LONG:
-    case LSHIFT_LONG:
-    case RSHIFT_LONG:
     case TIMES_LONG:
     case MOD_LONG:
     case DIVIDE_LONG:
     case SWRITE_LONG:
     case SREAD_LONG:
-    case SLEEP_LONG:
     case TOINT_LONG:
     case STRCMP_LONG:
     case ARGV_LONG:

@@ -98,7 +98,8 @@ int get_token_r(char * stream, char ** saveptr){
         case '*':
         case '-':
         case '/':
-            /* '<=', '>=', '+=', '-=', '*=', '/=' */
+        case '!':
+            /* '<=', '>=', '+=', '-=', '*=', '/=', '!=' */
             next_good = next == '=';
             token += (next_good)?'='<<7:0;
             stream += (next_good)?1:0;
@@ -163,7 +164,8 @@ int get_stmt(char * buffr, int max_len, FILE * stream){
             }
 #endif
         }
-        curr++;
+        if(paren_level != NOT_STARTED)
+            curr++;
         if(curr - buffr > max_len){
             ERR("Input buffer too small for program.");
         }
