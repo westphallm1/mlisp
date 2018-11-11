@@ -2,6 +2,11 @@
 #include "mlisp.h"
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+#define NOT_STARTED 999
+#define IN_QUOTES 1
+#define IS_ALPHA 2
 
 /* */
 int __get_alpha_token(char * stream, char ** saveptr){
@@ -122,3 +127,46 @@ int peek_token_r(char * stream, char ** saveptr){
     *saveptr = head;
     return result;
 }
+
+
+/* read characters from a data stream until a complete statement is read */
+
+int get_stmt(char * buffr, int max_len, FILE * stream){
+    int paren_level = NOT_STARTED;    
+    char parse_status = 0;
+    char * curr = buffr;
+    while(paren_level){
+        if((*curr = fgetc(stream))==EOF)
+            return EOF;
+        /*check whether we're in a string literal, ignore special considerations
+        if we are*/
+        if(*curr == '"')
+            parse_status ^= IN_QUOTES;
+
+        if(!(parse_status & IN_QUOTES)){
+            if(paren_level == NOT_STARTED && (*curr == '(' || *curr == ')'))
+                paren_level = 0;
+            if(*curr == '(')
+                paren_level+=1;
+            if(*curr == ')')
+                paren_level-=1;
+                /*only keep a single whitespace character between tokens*/
+#if 0
+            if(*curr == ' ' || *curr == '\n'){
+                if(parse_status | HAS_WHITESPACE){
+                    curr--;
+                } else {
+                    parse_status |= HAS_WHITESPACE;
+                }
+            }else{
+                parse_status &= ~(HAS_WHITESPACE);
+            }
+#endif
+        }
+        curr++;
+        if(curr - buffr > max_len){
+            ERR("Input buffer too small for program.");
+        }
+    }
+    return curr - buffr;
+};

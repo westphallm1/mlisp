@@ -56,7 +56,7 @@ void print_prog(struct ast_node * node){
 struct atom * build_atom(uint32_t token, char * start, char * stop){
     struct atom * atom = alloc_entry(); 
     if(atom == NULL){
-        ERR("Out of memory");
+        ERR("Maximum AST nodes exceeded");
     }
     atom -> token = token;
     while(*start <= ' ')
@@ -84,7 +84,7 @@ struct ast_node * build_tree(char * stream, char **saveptr){
     }
 
     if((lnode = alloc_entry()) == NULL){
-        ERR("Out of memory");
+        ERR("Maximum AST nodes exceeded");
     }
     lnode -> root_type = 0;
     lnode -> next = NULL;
@@ -92,7 +92,7 @@ struct ast_node * build_tree(char * stream, char **saveptr){
     if(token == LPAREN){
         /*handle a list */
         if((lchild = alloc_entry()) == NULL){
-            ERR("Out of memory");
+            ERR("Maximum AST nodes exceeded");
         }
         curr = lchild;
         curr -> root_type = peek_token_r(NULL,saveptr);

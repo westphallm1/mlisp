@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdint.h>
 
 #ifndef MLISP_H
@@ -26,6 +27,7 @@ struct atom {
 /* lexer.h */
 int get_token_r(char * stream, char ** saveptr);
 int peek_token_r(char * stream, char ** saveptr);
+int get_stmt(char * buffr, int max_len, FILE * stream);
 /* parser.h */
 struct ast_node * build_tree(char * stream, char **saveptr);
 void free_ast(void);

@@ -7,5 +7,5 @@
   else
     (/= n 2) 
   )
-  (swrite n)
+  (swrite n endl)
 )

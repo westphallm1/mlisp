@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 struct var_t {
     char id[4];
@@ -15,20 +16,40 @@ struct var_t {
     };
 };
 
-struct var_t VARS[STATIC_NVARS];
-char STACK[STATIC_STACK_SIZE];
-char STR_STACK[STATIC_STR_STACK_SIZE];
-char * sp = STACK;
-char * str_sp = STR_STACK;
+/*
+ * Memory management
+ */
+struct var_t * VARS;
+char * STR_STACK;
+char * STACK;
+char * sp;
+char * str_sp;
 char ** PROG_ARGV;
 int PROG_ARGC;
+int stack_size = STATIC_STACK_SIZE;
+
+void stack_setup(){
+    VARS=sbrk(STATIC_NVARS*sizeof(struct var_t));
+    STR_STACK=sbrk(STATIC_STR_STACK_SIZE);
+    STACK=sbrk(STATIC_STACK_SIZE);
+    sp = STACK;
+    str_sp = STR_STACK;
+}
 
 void * s_push(size_t size){
     sp += size;
+    if(sp > STACK + stack_size){
+        stack_size += STATIC_STACK_STEP;
+        sbrk(STATIC_STACK_STEP);
+    }
     return sp - size;
 }
 
 void s_pop(size_t size){
+    if(sp > STACK + stack_size){
+        stack_size -= STATIC_STACK_STEP;
+        sbrk(-STATIC_STACK_STEP);
+    }
     sp -= size;
 }
 
@@ -64,6 +85,7 @@ MATH_FUNCTION(sum,0, *to_write += operand);
 MATH_FUNCTION(or,0, *to_write |= operand);
 MATH_FUNCTION(and,~0, *to_write &= operand);
 MATH_FUNCTION(not,0, *to_write = ~operand);
+MATH_FUNCTION(xor,0,*to_write = (argc == 0)? operand: *to_write ^ operand);
 MATH_FUNCTION(negate,0, *to_write = !operand);
 MATH_FUNCTION(prod,1, *to_write *= operand);
 MATH_FUNCTION(minus,0,switch(argc){
@@ -182,26 +204,32 @@ void do_argc(struct ast_node * node, void ** data, int argc, int context){
 }
 /*quit the program with return code*/
 void do_exit(struct ast_node * node, void ** data, int argc, int context){
+    if(node == NULL){
+        exit(0);
+    }
     int exit_code = *(int *)exec_prog(node,context);
     exit(exit_code);
 }
 
 void do_swrite(struct ast_node * node, void ** data, int argc, int context){
-    void * arg_data = exec_prog(node,context);
-    char * operand = (char *)arg_data;
-    if(operand >= STACK && operand <= STACK + STATIC_STACK_SIZE){
-        /* if the operator is pointing at an item on the stack,
-         * print its numeric value */
-        printf("%d ",*(int*)operand);
-        s_pop(sizeof(int));
-    } else if (operand >= STR_STACK && 
-               operand <= STR_STACK + STATIC_STR_STACK_SIZE){
-        /* if the operator is pointing at an item in string memory
-         * print its value as a string */
-        printf("%s",(char *)operand);
+    if(node->is_atom && node->atom_child->token == ENDL){
+        printf("\n");
+    }else{
+        void * arg_data = exec_prog(node,context);
+        char * operand = (char *)arg_data;
+        if(operand >= STACK && operand <= STACK + stack_size){
+            /* if the operator is pointing at an item on the stack,
+             * print its numeric value */
+            printf("%d ",*(int*)operand);
+            s_pop(sizeof(int));
+        } else if (operand >= STR_STACK && 
+                   operand <= STR_STACK + STATIC_STR_STACK_SIZE){
+            /* if the operator is pointing at an item in string memory
+             * print its value as a string */
+            printf("%s",(char *)operand);
+        }
     }
     if(node->next == NULL){
-        printf("\n");
         int * n_written = s_push(sizeof(int));
         *n_written = argc;
     }
@@ -275,6 +303,7 @@ void (*operators[])(struct ast_node*,void**,int,int) = {
     [OR] = do_or,
     [AND] = do_and,
     [NOT] = do_not,
+    [XOR] = do_xor,
     [NEGATE] = do_negate,
     [ASSIGN] = do_assign,
     [PLUSASSIGN] = do_plusassign,
@@ -305,9 +334,33 @@ void * handle_int(struct atom * atom, int context){
     return data;
 }
 
-struct var_t * __get_id_index(struct atom * atom){
-    return &VARS[*atom->strval-'a'];
+/* determine if a character sequence corresponds to a variable */
+int __var_name_match(char * id, struct var_t * v){
+    return !memcmp(id, v->id,4);
 }
+
+/* find the location of a variable in the variable table */
+struct var_t * __get_id_index(struct atom * atom){
+    int hash_pos = 0;
+    int shift = 0;
+    char id[4] = {0,0,0,0};
+    memcpy(id,atom->strval,(atom->len<4)?atom->len:4);
+    int token = (id[0]+(id[1]<<7)+(id[2]<<14)+(id[3]<<21))%STATIC_NVARS;
+    int token0 = token;
+    do{
+        if((!VARS[token].type)){
+            memcpy(VARS[token].id,id,4);
+            return &VARS[token];
+        }
+        if(__var_name_match(id,&VARS[token])){
+            return &VARS[token];
+        }
+        token = (token+1)%STATIC_NVARS;
+
+    }while(token != token0);
+    ERR("No more space for static variables.");
+}
+
 void * handle_id(struct atom * atom, int context){
     struct var_t * index;
     union {
@@ -345,10 +398,18 @@ void * handle_id(struct atom * atom, int context){
     }
 }
 
+#define ON_STACK -1
 void * handle_strlit(struct atom * atom, int context){
+    if(atom -> len == ON_STACK){
+        /* hijack struct atom parameters to point to location in 
+         * program memory*/
+        return (void *) atom->strval;
+    }
     char * push_addr = s_str_push(atom->len+1);
     *(push_addr+atom->len) = 0;
     memcpy(push_addr,atom->strval,atom->len);
+    atom->strval = push_addr;
+    atom->len = ON_STACK;
     return (void *) push_addr;
 
 }
@@ -373,6 +434,9 @@ void * exec_prog(struct ast_node * node, int context){
         struct ast_node * first_curr = curr;
         int argc = 0;
         do {
+            if(operators[cmd_atom -> token] == NULL){
+                ERR("Unimplemented instruction.");
+            }
             operators[cmd_atom -> token](curr,&data,argc++,cmd_atom->token);
             if(curr != NULL)
                 curr = curr->next;
@@ -402,26 +466,44 @@ int main(int argc, char ** argv){
     FILE * fp;
     int * result;
     char * saveptr;
-    if(argc < 2 || (fp = fopen(argv[1],"r")) == NULL){
-        printf("Usage: %s FILE\n",argv[0]);
+    char interactive = 0;
+    if(argc < 2 ){
+        printf("Usage: %s (-i|FILE)\n",argv[0]);
         return 1;
     }
+    if(!strcmp(argv[1],"-i")){
+        fp = stdin;
+        interactive = 1;
+    }else if((fp = fopen(argv[1],"r")) == NULL){
+        printf("Usage: %s (-i|FILE)\n",argv[0]);
+        return 1;
+    }
+    int parse_status;
+    struct ast_node * node;
+    stack_setup();
     /*pass argc and argv to interpretted program*/
     PROG_ARGV = argv + 2;
     PROG_ARGC = argc - 2;
-    /*read program in from file (up to 1 kb)*/
-    fread(buffr,1024,1,fp);
+    /*read program in from file statement by statement*/
+    if(interactive)
+        printf("> ");
+    parse_status = get_stmt(buffr,INPUT_BUFFR_SIZE,fp);
 
-    struct ast_node * node = build_tree(buffr,&saveptr); 
-    while(node != NULL){
+    while(parse_status != EOF){
+        node = build_tree(buffr,&saveptr);
         if(node != NULL && ! node -> is_atom){
 #ifdef DEBUG
             print_prog(node);
 #endif /* DEBUG */
             result = (int *)exec_prog(node,-1);
+            if(interactive)
+                printf("%d\n",*STACK);
         }
         free_ast();
-        node = build_tree(saveptr,&saveptr);
+        memset(buffr,0,INPUT_BUFFR_SIZE);
+        if(interactive)
+            printf("> ");
+        parse_status = get_stmt(buffr,INPUT_BUFFR_SIZE,fp);
     }
 }
 

@@ -21,6 +21,7 @@ int is_kw(int token){
     case OR_LONG:
     case NOT_LONG:
     case NEGATE_LONG:
+    case XOR_LONG:
     case PLUS_LONG:
     case MINUS_LONG:
     case LSHIFT_LONG:
@@ -30,19 +31,17 @@ int is_kw(int token){
     case DIVIDE_LONG:
     case SWRITE_LONG:
     case SREAD_LONG:
-    case GPMODE_LONG:
-    case GPSET_LONG:
-    case GPREAD_LONG:
     case SLEEP_LONG:
+    case TOINT_LONG:
+    case STRCMP_LONG:
+    case ARGV_LONG:
+    case ARGC_LONG:
+    case EXIT_LONG:
     case ID_LONG:
     case STRLIT_LONG:
     case INT_LONG:
     case FLOAT_LONG:
-    case ARGV_LONG:
-    case ARGC_LONG:
-    case TOINT_LONG:
-    case STRCMP_LONG:
-    case EXIT_LONG:
+    case ENDL_LONG:
         return 1;
     }
     return 0;

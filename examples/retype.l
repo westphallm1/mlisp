@@ -1,4 +1,4 @@
 (= a "World")
-(swrite "Hello, " a "!")
+(swrite "Hello, " a "!"endl)
 (= a 5)
-(swrite (* a a))
+(swrite (* a a)endl)

@@ -1,2 +1,2 @@
 (= a (sread))
-(swrite "Hello, "a"!")
+(swrite "Hello, " a "!"endl)
