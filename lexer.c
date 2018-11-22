@@ -69,7 +69,7 @@ int get_token_r(char * stream, char ** saveptr){
     /* eat whitespace */
     if(*stream == 0)
         return 0;
-    while(*stream <= ' '){
+    while(*stream <= ' ' || *stream == ','){
         stream+=1;
     }
     start = *stream;
@@ -109,6 +109,12 @@ int get_token_r(char * stream, char ** saveptr){
             token += (next_good)?next<<7:0;
             stream += (next_good)?1:0;
             break;
+        case '{':
+            token = LPAREN;
+            break;
+        case '}':
+            token = RPAREN;
+            break;
         default:
             /* all single character tokens */
             break;
@@ -145,27 +151,15 @@ int get_stmt(char * buffr, int max_len, FILE * stream){
             parse_status ^= IN_QUOTES;
 
         if(!(parse_status & IN_QUOTES)){
-            if(paren_level == NOT_STARTED && (*curr == '(' || *curr == ')'))
+            if(paren_level == NOT_STARTED && (*curr == '(' || *curr == ')' ||
+                    *curr == ':' || *curr == '}'))
                 paren_level = 0;
-            if(*curr == '(')
+            if(*curr == '(' || *curr == ':')
                 paren_level+=1;
-            if(*curr == ')')
+            if(*curr == ')' || *curr == '}')
                 paren_level-=1;
-                /*only keep a single whitespace character between tokens*/
-#if 0
-            if(*curr == ' ' || *curr == '\n'){
-                if(parse_status | HAS_WHITESPACE){
-                    curr--;
-                } else {
-                    parse_status |= HAS_WHITESPACE;
-                }
-            }else{
-                parse_status &= ~(HAS_WHITESPACE);
-            }
-#endif
         }
-        if(paren_level != NOT_STARTED)
-            curr++;
+        curr++;
         if(curr - buffr > max_len){
             ERR("Input buffer too small for program.");
         }

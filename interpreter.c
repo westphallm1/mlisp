@@ -494,9 +494,6 @@ int main(int argc, char ** argv){
     while(parse_status != EOF){
         node = build_tree(buffr,&saveptr);
         if(node != NULL && ! node -> is_atom){
-#ifdef DEBUG
-            print_prog(node);
-#endif /* DEBUG */
             result = (int *)exec_prog(node,-1);
             if(interactive)
                 printf("%d\n",*STACK);
