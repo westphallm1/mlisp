@@ -1,5 +1,5 @@
-# mlisp
-mlisp (Matt's Lisp Compiler) is a bare-bones partial implementation of Lisp designed with an emphasis on
+# slimp
+slimp (Matt's Lisp Compiler) is a bare-bones partial implementation of Lisp designed with an emphasis on
 efficient memory utilization.
 ## Configuration
 <code>config.h</code> contains several macros that define the memory region sizes of the interpreter.
@@ -24,8 +24,8 @@ A REPL shell can be invoked as:
 5
 &gt; (+= a 2)
 7
-&gt; (swrite "this is the mlisp shell" endl)
-this is the mlisp shell
+&gt; (swrite "this is the slimp shell" endl)
+this is the slimp shell
 0
 &gt; (exit)
 $</pre>

@@ -7,7 +7,7 @@ FIB="./interpreter examples/fib.l 20",
 ATOI="./interpreter examples/atoi.l 30",
 STRCMP1="./interpreter examples/strcmp.l foo",
 STRCMP2="./interpreter examples/strcmp.l bar",
-SREAD="echo mlisp | ./interpreter examples/sread.l",
+SREAD="echo slimp | ./interpreter examples/sread.l",
 RETYPE="./interpreter examples/retype.l",
 FIZZBUZZ="./interpreter examples/fizzbuzz.l",
 )
@@ -50,7 +50,7 @@ FIB="""\
 ATOI="60 \n",
 STRCMP1="hello world!\n",
 STRCMP2="goodbye world!\n",
-SREAD="Hello, mlisp!\n",
+SREAD="Hello, slimp!\n",
 RETYPE="Hello, World!\n25 \n",
 FIZZBUZZ="""\
 1 

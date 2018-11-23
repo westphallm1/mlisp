@@ -1,5 +1,5 @@
 #include "keywords.h"
-#include "mlisp.h"
+#include "slimp.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -489,6 +489,19 @@ int main(int argc, char ** argv){
     /*read program in from file statement by statement*/
     if(interactive)
         printf("> ");
+
+    /*read program in from file (up to 1 kb)*/
+    fread(buffr,INPUT_BUFFR_SIZE,1,fp);
+
+    node = build_tree(buffr,&saveptr); 
+    while(node != NULL){
+        if(!node->is_atom){
+            result = (int *)exec_prog(node,-1);
+            free_ast();
+        }
+        node = build_tree(saveptr,&saveptr);
+    }
+#if 0
     parse_status = get_stmt(buffr,INPUT_BUFFR_SIZE,fp);
 
     while(parse_status != EOF){
@@ -504,5 +517,6 @@ int main(int argc, char ** argv){
             printf("> ");
         parse_status = get_stmt(buffr,INPUT_BUFFR_SIZE,fp);
     }
+#endif
 }
 

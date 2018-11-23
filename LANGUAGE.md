@@ -13,7 +13,7 @@ arg  -> ATOM
       ;   
 </pre>
 ## Data Types
-mlisp supports integers (32 bits, signed) and character strings. Booleans are handled C-style 
+slimp supports integers (32 bits, signed) and character strings. Booleans are handled C-style 
 (0 = false, nonzero = true). There are no lists, structures, functions, or floating points 
 supported in this version.
 

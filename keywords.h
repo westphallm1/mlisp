@@ -6,6 +6,8 @@
 #define CHR_CODE_LONG(a,b,c,d) (a + (b<<7) + (c<<14) + (d<<21)) % LONG_HASH_VAL
 int is_kw(int token);
 
+#define NEWL 10
+
 #define LPAREN 40
 #define LPAREN_LONG 40
 #define RPAREN 41

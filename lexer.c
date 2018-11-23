@@ -1,5 +1,5 @@
 #include "keywords.h"
-#include "mlisp.h"
+#include "slimp.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -66,9 +66,9 @@ int get_token_r(char * stream, char ** saveptr){
     if(stream == NULL){
         stream = *saveptr;
     }
-    /* eat whitespace */
     if(*stream == 0)
         return 0;
+    /* eat whitespace */
     while(*stream <= ' ' || *stream == ','){
         stream+=1;
     }
@@ -135,6 +135,16 @@ int peek_token_r(char * stream, char ** saveptr){
     return result;
 }
 
+/*
+ * Return whether the next token is a newline. Most language structures
+ * ignore newlines but implicit calls require them
+ */
+int peek_newl(char * stream){
+    while(*stream == ' ' || *stream == ','){
+        stream+=1;
+    }
+    return *stream == '\n' || *stream == '\0';
+}
 
 /* read characters from a data stream until a complete statement is read */
 
@@ -143,8 +153,14 @@ int get_stmt(char * buffr, int max_len, FILE * stream){
     char parse_status = 0;
     char * curr = buffr;
     while(paren_level){
-        if((*curr = fgetc(stream))==EOF)
-            return EOF;
+        if((*curr = fgetc(stream))==EOF){
+            if(curr == buffr)
+                return EOF;
+            *curr = '\0';
+            return curr - buffr;
+        }
+        if(*curr == '\n' && paren_level == NOT_STARTED)
+            return curr - buffr;
         /*check whether we're in a string literal, ignore special considerations
         if we are*/
         if(*curr == '"')
