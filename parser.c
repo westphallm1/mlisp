@@ -104,10 +104,6 @@ void __build_call_tree(struct ast_node * curr, char ** saveptr){
 }
 
 void __build_cflow_tree(struct ast_node * curr, char ** saveptr){
-    /* clear the leading ':' */
-    if(get_token_r(NULL,saveptr) != ':'){
-        ERR("Expected ':'.");
-    }
     /* get the conditional */
     curr -> next = build_tree(NULL,saveptr);
     /* get the rest of the statement as normal */
@@ -117,9 +113,12 @@ void __build_cflow_tree(struct ast_node * curr, char ** saveptr){
 }
 
 void __build_call_tree_implicit(struct ast_node * curr, char ** saveptr){
-    while(peek_token_r(NULL,saveptr) != RPAREN && !peek_newl(*saveptr)){
+    uint32_t peek_token;
+    peek_token = peek_token_r(NULL,saveptr);
+    while(peek_token != COLON && peek_token != RPAREN && !peek_newl(*saveptr)){
         curr -> next = build_tree(NULL,saveptr);
         curr = curr -> next;
+        peek_token = peek_token_r(NULL,saveptr);
     }
     /* null terminate */
     curr -> next = NULL;

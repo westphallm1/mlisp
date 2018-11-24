@@ -41,6 +41,7 @@ int is_kw(int token){
     case INT_LONG:
     case FLOAT_LONG:
     case ENDL_LONG:
+    case COLON_LONG:
         return 1;
     }
     return 0;

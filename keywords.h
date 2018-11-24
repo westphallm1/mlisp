@@ -86,4 +86,6 @@ int is_kw(int token);
 #define FLOAT_LONG 44522
 #define ENDL 179
 #define ENDL_LONG 875
+#define COLON 58
+#define COLON_LONG 58
 #endif /* KEYWORDS_H */

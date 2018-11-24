@@ -109,10 +109,7 @@ int get_token_r(char * stream, char ** saveptr){
             token += (next_good)?next<<7:0;
             stream += (next_good)?1:0;
             break;
-        case '{':
-            token = LPAREN;
-            break;
-        case '}':
+        case ';':
             token = RPAREN;
             break;
         default:
