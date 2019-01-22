@@ -1,6 +1,5 @@
 # slimp
-slimp (Matt's Lisp Compiler) is a bare-bones partial implementation of Lisp designed with an emphasis on
-efficient memory utilization.
+SLIMP is a Lisp Interpreter, Minus Parentheses! A C implementation of a LISP-like language with some variations on its S-expression parsing. Currently in early Alpha
 ## Configuration
 <code>config.h</code> contains several macros that define the memory region sizes of the interpreter.
 These parameters can be set to an arbitrarily large or small value, but certain programs will require a build with
@@ -14,18 +13,6 @@ Objects can be compiled with debug symbols using
 <pre>$ python3 test.py
 /* all tests should pass */</pre> 
 ## Usage
-See <code>examples/</code> for program examples and <code>LANGUAGE.md</code> 
-for a more comprehensive list of language features. <code>examples/demo.l</code> contains an example of every language feature.
+See <code>examples/</code> for program examples.
 A program file can be run from the command line with:
-<pre>$ /path/to/interpreter /path/to/source.l &lt;command line arguments&gt;</pre>
-A REPL shell can be invoked as:
-<pre>$ /path/to/interpreter -i
-&gt; (= a 5)
-5
-&gt; (+= a 2)
-7
-&gt; (swrite "this is the slimp shell" endl)
-this is the slimp shell
-0
-&gt; (exit)
-$</pre>
+<pre>$ /path/to/interpreter /path/to/source.sl &lt;command line arguments&gt;</pre>
