@@ -5,34 +5,6 @@
 #include <stdio.h>
 #include <string.h>
 
-union ast_entry{
-    struct atom atom;
-    struct ast_node node;
-};
-#ifdef STATIC
-
-union ast_entry ENTRIES[STATIC_MAX_NODES];
-union ast_entry * entry_ptr = ENTRIES;
-
-void * alloc_entry(){
-    if(++entry_ptr - ENTRIES == STATIC_MAX_NODES)
-        return NULL;
-    return entry_ptr - 1;
-}
-void free_ast(){
-    entry_ptr = ENTRIES;
-}
-
-#else
-
-void * alloc_entry(){
-    return malloc(sizeof(ast_entry));
-}
-void free_ast(){
-}
-
-#endif /* STATIC */
-
 
 #ifdef DEBUG
 void print_prog(struct ast_node * node){

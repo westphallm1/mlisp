@@ -6,61 +6,6 @@
 #include <string.h>
 #include <unistd.h>
 
-struct var_t {
-    char id[4];
-    unsigned char type;
-    union{
-        int i;
-        float f;
-        char * s;
-    };
-};
-
-/*
- * Memory management
- */
-struct var_t * VARS;
-char * STR_STACK;
-char * STACK;
-char * sp;
-char * str_sp;
-char ** PROG_ARGV;
-int PROG_ARGC;
-int stack_size = STATIC_STACK_SIZE;
-
-void stack_setup(){
-    VARS=sbrk(STATIC_NVARS*sizeof(struct var_t));
-    STR_STACK=sbrk(STATIC_STR_STACK_SIZE);
-    STACK=sbrk(STATIC_STACK_SIZE);
-    sp = STACK;
-    str_sp = STR_STACK;
-}
-
-void * s_push(size_t size){
-    sp += size;
-    if(sp > STACK + stack_size){
-        stack_size += STATIC_STACK_STEP;
-        sbrk(STATIC_STACK_STEP);
-    }
-    return sp - size;
-}
-
-void s_pop(size_t size){
-    if(sp > STACK + stack_size){
-        stack_size -= STATIC_STACK_STEP;
-        sbrk(-STATIC_STACK_STEP);
-    }
-    sp -= size;
-}
-
-void * s_str_push(size_t size){
-    str_sp += size;
-    return str_sp - size;
-}
-
-void s_str_pop(size_t size){
-    str_sp -= size;
-}
 
 void * exec_prog(struct ast_node * node,int context);
 
