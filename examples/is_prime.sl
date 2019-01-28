@@ -8,8 +8,8 @@ while & prime < q n:
 ;
 
 if ==prime 1:
-  swrite n "is prime!" endl
+  write n "is prime!" endl
 else
-  swrite n "is not prime..." endl
+  write n "is not prime..." endl
 ;
 exit

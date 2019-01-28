@@ -74,7 +74,7 @@ void do_##name(struct ast_node * node, void ** data, int argc, int context){\
         }else {\
             switch(node->list_child->root_type){\
                 case ARGV:\
-                case SREAD:\
+                case READ:\
                     var -> type = STRLIT;\
                     break;\
                 default:\
@@ -269,8 +269,8 @@ void (*operators[])(struct ast_node*,void**,int,int) = {
     [ARGV] = do_argv,
     [ARGC] = do_argc,
     [STRCMP] = do_strcmp,
-    [SREAD] = do_sread,
-    [SWRITE] = do_swrite,
+    [READ] = do_sread,
+    [WRITE] = do_swrite,
     [TOINT] = do_toint,
     [EXIT] = do_exit,
 };

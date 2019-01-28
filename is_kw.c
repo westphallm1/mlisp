@@ -28,8 +28,8 @@ int is_kw(int token){
     case TIMES_LONG:
     case MOD_LONG:
     case DIVIDE_LONG:
-    case SWRITE_LONG:
-    case SREAD_LONG:
+    case WRITE_LONG:
+    case READ_LONG:
     case TOINT_LONG:
     case STRCMP_LONG:
     case SUBSTR_LONG:

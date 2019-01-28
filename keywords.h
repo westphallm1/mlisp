@@ -60,10 +60,10 @@ int is_kw(int token);
 #define MOD_LONG 37
 #define DIVIDE 47
 #define DIVIDE_LONG 47
-#define SWRITE 56
-#define SWRITE_LONG 33414
-#define SREAD 72
-#define SREAD_LONG 12505
+#define WRITE 24
+#define WRITE_LONG 21644
+#define READ 98
+#define READ_LONG 12265
 #define TOINT 197
 #define TOINT_LONG 18377
 #define STRCMP 23
