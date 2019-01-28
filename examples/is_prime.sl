@@ -1,6 +1,6 @@
-=n toint argv 0
-=q 2
-=prime 1
+= n toint argv 0
+= q 2
+= prime 1
 
 while & prime < q n: 
   if !%n q: =prime 0;

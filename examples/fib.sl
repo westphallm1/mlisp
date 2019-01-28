@@ -14,4 +14,4 @@ while > n 0:
   = a - b a
 ;
 swrite b endl
-
+exit
