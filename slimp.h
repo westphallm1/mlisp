@@ -43,6 +43,8 @@ struct ast_node * build_tree(char * stream, char **saveptr);
 void free_ast(void);
 
 /* mem_manage.c */
+enum mem_region {VAR_MEM, STRING_MEM, AST_MEM, STACK_MEM};
+enum mem_region mem_region_of_ptr(char *);
 void * alloc_entry();
 void free_ast();
 void stack_setup();
@@ -50,15 +52,9 @@ void * s_push(size_t size);
 void s_pop(size_t size);
 void * s_str_push(size_t size);
 void s_str_pop(size_t size);
-
-extern struct var_t * VARS;
-extern char * STR_STACK;
-extern char * STACK;
-extern char * sp;
-extern char * str_sp;
-extern char ** PROG_ARGV;
-extern int PROG_ARGC;
-extern int stack_size;
+void reset_stack();
+struct var_t * var_by_name(struct atom * atom);
+char * mem_map(FILE * fp);
 
 #ifdef DEBUG
 void print_prog(struct ast_node * node);

@@ -8,6 +8,8 @@
 
 
 void * exec_prog(struct ast_node * node,int context);
+char ** PROG_ARGV;
+int PROG_ARGC;
 
 #define MATH_FUNCTION(name,initial,operation) \
 void do_##name(struct ast_node * node, void ** data, int argc, int context){\
@@ -103,7 +105,7 @@ void do_sread(struct ast_node * node, void ** data, int argc, int context){
     /* get the head of the string stack */
     char * push_addr = s_str_push(0);
     /* don't let the string stack overflow */
-    int max_len = STR_STACK + STATIC_STACK_SIZE - str_sp;
+    int max_len = 256; // TODO something more realistic
     if(node != NULL){
         max_len = *(int *)exec_prog(node,context);
         s_pop(sizeof(int));
@@ -163,13 +165,13 @@ void do_swrite(struct ast_node * node, void ** data, int argc, int context){
     }else{
         void * arg_data = exec_prog(node,context);
         char * operand = (char *)arg_data;
-        if(operand >= STACK && operand <= STACK + stack_size){
+        enum mem_region region = mem_region_of_ptr(operand);
+        if(region == STACK_MEM){
             /* if the operator is pointing at an item on the stack,
              * print its numeric value */
             printf("%d ",*(int*)operand);
             s_pop(sizeof(int));
-        } else if (operand >= STR_STACK && 
-                   operand <= STR_STACK + STATIC_STR_STACK_SIZE){
+        } else if (region == STRING_MEM){
             /* if the operator is pointing at an item in string memory
              * print its value as a string */
             printf("%s",(char *)operand);
@@ -281,33 +283,6 @@ void * handle_int(struct atom * atom, int context){
     return data;
 }
 
-/* determine if a character sequence corresponds to a variable */
-int __var_name_match(char * id, struct var_t * v){
-    return !memcmp(id, v->id,4);
-}
-
-/* find the location of a variable in the variable table */
-struct var_t * __get_id_index(struct atom * atom){
-    int hash_pos = 0;
-    int shift = 0;
-    char id[4] = {0,0,0,0};
-    memcpy(id,atom->strval,(atom->len<4)?atom->len:4);
-    int token = (id[0]+(id[1]<<7)+(id[2]<<14)+(id[3]<<21))%STATIC_NVARS;
-    int token0 = token;
-    do{
-        if((!VARS[token].type)){
-            memcpy(VARS[token].id,id,4);
-            return &VARS[token];
-        }
-        if(__var_name_match(id,&VARS[token])){
-            return &VARS[token];
-        }
-        token = (token+1)%STATIC_NVARS;
-
-    }while(token != token0);
-    ERR("No more space for static variables.");
-}
-
 void * handle_id(struct atom * atom, int context){
     struct var_t * index;
     union {
@@ -316,7 +291,7 @@ void * handle_id(struct atom * atom, int context){
      float * f;   
      char * s;   
     } push_addr;
-    index = __get_id_index(atom);
+    index = var_by_name(atom);
     switch(context){
         case ASSIGN:
         case PLUSASSIGN:
@@ -396,7 +371,7 @@ void * exec_prog(struct ast_node * node, int context){
 
         //clear the stack after the root has finished
         if(context == -1){
-            sp = STACK;
+            reset_stack();
         }
         return data;
     } else if(!node->is_atom && node->list_child->root_type){
@@ -409,11 +384,15 @@ void * exec_prog(struct ast_node * node, int context){
 }
 
 int main(int argc, char ** argv){
-    char buffr[INPUT_BUFFR_SIZE];
+    char * buffr;
     FILE * fp;
     int * result;
     char * saveptr;
     char interactive = 0;
+    int parse_status;
+    struct ast_node * node;
+
+    /* simple command line validation */ 
     if(argc < 2 ){
         printf("Usage: %s (-i|FILE)\n",argv[0]);
         return 1;
@@ -425,19 +404,17 @@ int main(int argc, char ** argv){
         printf("Usage: %s (-i|FILE)\n",argv[0]);
         return 1;
     }
-    int parse_status;
-    struct ast_node * node;
-    stack_setup();
+
     /*pass argc and argv to interpretted program*/
     PROG_ARGV = argv + 2;
     PROG_ARGC = argc - 2;
-    /*read program in from file statement by statement*/
-    if(interactive)
-        printf("> ");
 
-    /*read program in from file (up to 1 kb)*/
-    fread(buffr,INPUT_BUFFR_SIZE,1,fp);
+    /*read program in from file*/
+    buffr = mem_map(fp);
 
+    stack_setup();
+
+    /* command loop */
     node = build_tree(buffr,&saveptr); 
     while(node != NULL){
         if(!node->is_atom){
@@ -446,22 +423,5 @@ int main(int argc, char ** argv){
         }
         node = build_tree(saveptr,&saveptr);
     }
-#if 0
-    parse_status = get_stmt(buffr,INPUT_BUFFR_SIZE,fp);
-
-    while(parse_status != EOF){
-        node = build_tree(buffr,&saveptr);
-        if(node != NULL && ! node -> is_atom){
-            result = (int *)exec_prog(node,-1);
-            if(interactive)
-                printf("%d\n",*STACK);
-        }
-        free_ast();
-        memset(buffr,0,INPUT_BUFFR_SIZE);
-        if(interactive)
-            printf("> ");
-        parse_status = get_stmt(buffr,INPUT_BUFFR_SIZE,fp);
-    }
-#endif
 }
 
