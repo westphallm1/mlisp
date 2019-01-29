@@ -33,8 +33,11 @@ int is_kw(int token){
     case TOINT_LONG:
     case STRCMP_LONG:
     case SUBSTR_LONG:
+    case FUN_LONG:
     case ARGV_LONG:
     case ARGC_LONG:
+    case ARG_LONG:
+    case RET_LONG:
     case EXIT_LONG:
     case ID_LONG:
     case STRLIT_LONG:

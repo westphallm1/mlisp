@@ -26,7 +26,7 @@ void print_prog(struct ast_node * node){
 #endif /*DEBUG*/
 
 int is_cflow(uint32_t token){
-    return token==IF || token == WHILE;
+    return token==IF || token == WHILE || token == FUN;
 }
 
 int is_instr(uint32_t token){

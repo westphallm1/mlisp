@@ -14,18 +14,22 @@ int PROG_ARGC;
 #define MATH_FUNCTION(name,initial,operation) \
 void do_##name(struct ast_node * node, void ** data, int argc, int context){\
     int * to_write; \
+    struct var_t * var_data;\
     if(node == NULL) \
         return; \
     if(argc == 0){ \
-        *data = s_push(sizeof(int)); \
-        to_write = (int*)*data; \
-        *to_write = initial ; \
+        *data = s_push(sizeof(struct var_t)); \
+        var_data = (struct var_t *) *data;\
+        var_data -> type = INT;\
+        to_write = &var_data->i; \
+        *to_write = initial; \
     } \
-    to_write = (int*)*data; \
-    void * arg_data = exec_prog(node,context); \
-    int operand = *(int*)arg_data; \
+    var_data = (struct var_t *) *data;\
+    to_write = &var_data->i; \
+    struct var_t * arg_data = (struct var_t *) exec_prog(node,context); \
+    int operand = arg_data->i; \
     operation ;\
-    s_pop(sizeof(int)); \
+    s_pop(sizeof(struct var_t)); \
 }
 
 MATH_FUNCTION(sum,0, *to_write += operand);
@@ -81,15 +85,16 @@ void do_##name(struct ast_node * node, void ** data, int argc, int context){\
                     break;\
             }\
         }\
+        struct var_t * new_value = (struct var_t *) exec_prog(node,PLUS); \
         switch(var->type){\
             case INT:\
-                var->i operation *(int *)exec_prog(node,PLUS);\
+                var->i operation new_value -> i;\
                 break;\
             case FLOAT:\
-                var->f operation *(float *)exec_prog(node,PLUS);\
+                var->f operation new_value -> f;\
                 break;\
             case STRLIT:\
-                var->s = (char *) exec_prog(node,PLUS);\
+                var->s = new_value -> s;\
                 break;\
         }\
     }\
@@ -108,14 +113,17 @@ void do_sread(struct ast_node * node, void ** data, int argc, int context){
     int max_len = 256; // TODO something more realistic
     if(node != NULL){
         max_len = *(int *)exec_prog(node,context);
-        s_pop(sizeof(int));
+        s_pop(sizeof(struct var_t));
     }
     if(node == NULL || node->next == NULL){
         fgets(push_addr,max_len,stdin);
         int len = strlen(push_addr);
         *(push_addr + len - 1) = 0;
         s_str_push(len);
-        *data = push_addr;
+        *data = s_push(sizeof(struct var_t));
+        struct var_t * str_var = (struct var_t *)*data; 
+        str_var -> type = STRLIT;
+        str_var -> s = push_addr;
     }
 
 }
@@ -123,31 +131,37 @@ void do_strcmp(struct ast_node * node, void ** data, int argc, int context){
     if(argc == 0){
         *data = exec_prog(node,context);
     }else{
-        char * arg1 = (char *) *data;
-        char * arg2 = (char *) exec_prog(node,context);
-        int * to_push = s_push(sizeof(int));
-        *to_push = strcmp(arg1,arg2);
+        char * arg1 = ((struct var_t *)*data) -> s;
+        char * arg2 = ((struct var_t *) exec_prog(node,context)) -> s;
+        struct var_t * to_push = s_push(sizeof(struct var_t));
+        to_push -> i = strcmp(arg1,arg2);
+        to_push -> type = INT;
         *data = to_push;
     }
 }
 /* get arg at position as a string */
 void do_argv(struct ast_node * node, void ** data, int argc, int context){
     if(argc == 0){
-        char * to_push = PROG_ARGV[*(int *)exec_prog(node,context)];
-        s_pop(sizeof(int));
+        int pos = ((struct var_t *) exec_prog(node, context)) -> i;
+        char * to_push = PROG_ARGV[pos];
+        s_pop(sizeof(struct var_t));
         int len = strlen(to_push)+1;
         char * push_addr = s_str_push(len);
         memcpy(push_addr,to_push,len);
         *(push_addr + len) = 0;
-        *data = (void *)push_addr;
+        struct var_t * str_var = s_push(sizeof(struct var_t));
+        str_var -> s = push_addr;
+        str_var -> type = STRLIT;
+        *data = str_var;
     }
 }
 
 /* get number of arguments */
 void do_argc(struct ast_node * node, void ** data, int argc, int context){
     if(argc == 0){
-        *data = s_push(sizeof(int));
-        *(int *)*data = PROG_ARGC;
+        *data = s_push(sizeof(struct var_t));
+        ((struct var_t *) *data) -> i = PROG_ARGC;
+        ((struct var_t *) *data) -> type = INT;
     }
 }
 /*quit the program with return code*/
@@ -155,7 +169,7 @@ void do_exit(struct ast_node * node, void ** data, int argc, int context){
     if(node == NULL){
         exit(0);
     }
-    int exit_code = *(int *)exec_prog(node,context);
+    int exit_code = ((struct var_t *) exec_prog(node,context)) -> i;
     exit(exit_code);
 }
 
@@ -163,35 +177,35 @@ void do_swrite(struct ast_node * node, void ** data, int argc, int context){
     if(node->is_atom && node->atom_child->token == ENDL){
         printf("\n");
     }else{
-        void * arg_data = exec_prog(node,context);
-        char * operand = (char *)arg_data;
-        enum mem_region region = mem_region_of_ptr(operand);
-        if(region == STACK_MEM){
+        struct var_t * arg_data = (struct var_t *) exec_prog(node,context);
+        if(arg_data -> type == INT){
             /* if the operator is pointing at an item on the stack,
              * print its numeric value */
-            printf("%d ",*(int*)operand);
-            s_pop(sizeof(int));
-        } else if (region == STRING_MEM){
+            printf("%d ", arg_data -> i);
+        } else if (arg_data -> type == STRLIT){
             /* if the operator is pointing at an item in string memory
              * print its value as a string */
-            printf("%s",(char *)operand);
+            printf("%s",arg_data -> s);
         }
+        s_pop(sizeof(struct var_t));
     }
     if(node->next == NULL){
-        int * n_written = s_push(sizeof(int));
-        *n_written = argc;
+        struct var_t * n_written = s_push(sizeof(struct var_t));
+        n_written -> type = INT;
+        n_written -> i = argc;
     }
 }
 
 void do_if(struct ast_node * node, void ** data, int argc, int context){
     if(argc == 0){
         //get the address to write
-        *data = s_push(sizeof(int));
-        *(int *)*data = *(int *)exec_prog(node,context);
-        s_pop(sizeof(int));
+        *data = s_push(sizeof(struct var_t));
+        ((struct var_t *)*data) -> i =
+            ((struct var_t *) exec_prog(node,context)) -> i;
+        s_pop(sizeof(struct var_t));
     } else {
         //write the address
-        int * to_write = (int *)*data;
+        int * to_write = &((struct var_t *)*data) -> i;
         //else: flip the condition
         if(node->is_atom && node->atom_child->token == ELSE){
             *to_write = !*to_write;
@@ -199,7 +213,7 @@ void do_if(struct ast_node * node, void ** data, int argc, int context){
         }
         if(*to_write){
             exec_prog(node,context);
-            s_pop(sizeof(int));
+            s_pop(sizeof(struct var_t));
         }
     }
 }
@@ -207,24 +221,27 @@ void do_if(struct ast_node * node, void ** data, int argc, int context){
 void do_while(struct ast_node * node, void ** data, int argc, int context){
     if(argc == 0){
         //get the address to write
-        *data = s_push(sizeof(int));
+        *data = s_push(sizeof(struct var_t));
+        ((struct var_t *)*data) -> i =
+            ((struct var_t *) exec_prog(node,context)) -> i;
         *(int *)*data = *(int *)exec_prog(node,context);
     } else {
         //write the address
-        int * to_write = (int *)*data;
+        int * to_write = &((struct var_t *)*data) -> i;
         if(*to_write){
             exec_prog(node,context);
-            s_pop(sizeof(int));
+            s_pop(sizeof(struct var_t));
         }
     }
 }
 
 void do_toint(struct ast_node * node, void ** data, int argc, int context){
-    void * arg_data = exec_prog(node,context);
-    char * operand = (char *)arg_data;
-    *data = s_push(sizeof(int));
-    int* to_write = (int *)*data;
-    *to_write = atoi(operand);
+    struct var_t * arg_data = exec_prog(node,context);
+    char * operand = arg_data -> s;
+    *data = s_push(sizeof(struct var_t));
+    struct var_t * int_var = (struct var_t *) *data;
+    int_var -> i = atoi(operand);
+    int_var -> type = INT;
 }
 
 int atoi_l(struct atom * atom_child){
@@ -277,62 +294,54 @@ void (*operators[])(struct ast_node*,void**,int,int) = {
 
 
 void * handle_int(struct atom * atom, int context){
-    void * data = s_push(sizeof(int));
-    int * int_data = (int *)data;
-    *int_data = atoi_l(atom);
+    struct var_t * data = s_push(sizeof(struct var_t));
+    data->i = atoi_l(atom);
     return data;
 }
 
 void * handle_id(struct atom * atom, int context){
     struct var_t * index;
-    union {
-     struct var_t * v;   
-     int * i;   
-     float * f;   
-     char * s;   
-    } push_addr;
     index = var_by_name(atom);
+    /* if the id is the first argument of an assign statement, return
+     its value */
     switch(context){
         case ASSIGN:
         case PLUSASSIGN:
         case MINUSASSIGN:
         case TIMESASSIGN:
         case DIVASSIGN:
-            push_addr.v = index;
-            if(!push_addr.v->type){
-                push_addr.v -> type = INT;
+            if(!index->type){
+                index -> type = INT;
             }
-            return (void *)push_addr.v;
+            return (void *) index;
         default:
             break;
     }
-    switch(index ->type){
-        case INT:
-            push_addr.i = (int *) s_push(sizeof(int));
-            *push_addr.i = index->i;
-            return (void *)push_addr.i;
-        case FLOAT:
-            push_addr.f = (float *) s_push(sizeof(float));
-            *push_addr.f = index->f;
-            return (void *)push_addr.f;
-        case STRLIT:
-            return (void *)index->s;
-    }
+
+    /* otherwise, copy it to the top of the stack */
+    struct var_t * index_copy = s_push(sizeof(struct var_t));
+    memcpy(index_copy,index,sizeof(struct var_t));
+    return index_copy;
 }
 
 #define ON_STACK -1
 void * handle_strlit(struct atom * atom, int context){
+    struct var_t * str_addr = s_push(sizeof(struct var_t));
+    str_addr -> type = STRLIT;
     if(atom -> len == ON_STACK){
-        /* hijack struct atom parameters to point to location in 
-         * program memory*/
-        return (void *) atom->strval;
+        /* point the char * union value of the var_t to the string */
+        str_addr -> s = atom->strval;
+    } else {
+        /* copy the string from the AST stack to a permanent location */
+        char * push_addr = s_str_push(atom->len+1);
+        *(push_addr+atom->len) = 0;
+        memcpy(push_addr,atom->strval,atom->len);
+        atom->strval = push_addr;
+        atom->len = ON_STACK;
+        /* point the char * union value of the var_t to the string */
+        str_addr -> s = atom->strval;
     }
-    char * push_addr = s_str_push(atom->len+1);
-    *(push_addr+atom->len) = 0;
-    memcpy(push_addr,atom->strval,atom->len);
-    atom->strval = push_addr;
-    atom->len = ON_STACK;
-    return (void *) push_addr;
+    return str_addr;
 
 }
 
@@ -363,7 +372,8 @@ void * exec_prog(struct ast_node * node, int context){
             if(curr != NULL)
                 curr = curr->next;
             // special case for while loops: go back to the condition check node
-            if(curr == NULL && cmd_atom -> token == WHILE && *(int *)data){
+            int while_val = ((struct var_t *) data) -> i;
+            if(curr == NULL && cmd_atom -> token == WHILE && while_val){
                 curr = first_curr;
                 argc = 0;
             }

@@ -70,10 +70,16 @@ int is_kw(int token);
 #define STRCMP_LONG 30150
 #define SUBSTR 202
 #define SUBSTR_LONG 37898
+#define FUN 63
+#define FUN_LONG 48251
 #define ARGV 139
 #define ARGV_LONG 55335
 #define ARGC 101
 #define ARGC_LONG 46215
+#define ARG 36
+#define ARG_LONG 36
+#define RET 191
+#define RET_LONG 13477
 #define EXIT 147
 #define EXIT_LONG 22394
 #define ID 156
