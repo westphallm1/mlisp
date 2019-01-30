@@ -102,18 +102,18 @@ void free_ast(){
 
 void * s_push(size_t size){
     sp += size;
-    if(sp > STACK + stack_size){
+    if(sp > stack_size + (char *) ENTRIES){
         stack_size += STATIC_STACK_STEP;
         sbrk(STATIC_STACK_STEP);
     }
     return sp - size;
 }
 
+void * push_var_t(){
+    return s_push(sizeof(struct var_t));
+}
+
 void s_pop(size_t size){
-    if(sp > STACK + stack_size){
-        stack_size -= STATIC_STACK_STEP;
-        sbrk(-STATIC_STACK_STEP);
-    }
     sp -= size;
 }
 

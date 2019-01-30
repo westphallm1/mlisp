@@ -51,6 +51,7 @@ void stack_setup();
 void * s_push(size_t size);
 void s_pop(size_t size);
 void * s_str_push(size_t size);
+void * push_var_t();
 void s_str_pop(size_t size);
 void reset_stack();
 struct var_t * var_by_name(struct atom * atom);

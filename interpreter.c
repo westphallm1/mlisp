@@ -7,39 +7,57 @@
 #include <unistd.h>
 
 
-void * exec_prog(struct ast_node * node,int context);
+struct var_t * exec_prog(struct ast_node * node,int context);
 char ** PROG_ARGV;
 int PROG_ARGC;
 
-#define MATH_FUNCTION(name,initial,operation) \
-void do_##name(struct ast_node * node, void ** data, int argc, int context){\
-    int * to_write; \
-    struct var_t * var_data;\
-    if(node == NULL) \
-        return; \
-    if(argc == 0){ \
-        *data = s_push(sizeof(struct var_t)); \
-        var_data = (struct var_t *) *data;\
-        var_data -> type = INT;\
-        to_write = &var_data->i; \
-        *to_write = initial; \
-    } \
-    var_data = (struct var_t *) *data;\
-    to_write = &var_data->i; \
-    struct var_t * arg_data = (struct var_t *) exec_prog(node,context); \
-    int operand = arg_data->i; \
-    operation ;\
-    s_pop(sizeof(struct var_t)); \
+int math_initial(int context){
+    switch(context){
+        case TIMES:
+            return 1;
+        case AND:
+            return ~0;
+        default:
+            return 0;
+    }
 }
 
-MATH_FUNCTION(sum,0, *to_write += operand);
-MATH_FUNCTION(or,0, *to_write |= operand);
-MATH_FUNCTION(and,~0, *to_write &= operand);
-MATH_FUNCTION(not,0, *to_write = ~operand);
-MATH_FUNCTION(xor,0,*to_write = (argc == 0)? operand: *to_write ^ operand);
-MATH_FUNCTION(negate,0, *to_write = !operand);
-MATH_FUNCTION(prod,1, *to_write *= operand);
-MATH_FUNCTION(minus,0,switch(argc){
+#define MATH_CASE(val, op) case val: op; break
+#define MATH_CASE2(val, other) case val: \
+    *to_write = (argc == 0)?operand:other; break
+void do_math(struct ast_node * node, struct var_t ** data, int argc, int context){
+    int * to_write; 
+    struct var_t * var_data;
+    if(node == NULL) 
+        return; 
+    if(argc == 0){ 
+        *data = push_var_t(); 
+        var_data = (struct var_t *) *data;
+        var_data -> type = INT;
+        to_write = &var_data->i; 
+        *to_write = math_initial(context);
+    } 
+    var_data = (struct var_t *) *data;
+    to_write = &var_data->i; 
+    struct var_t * arg_data = (struct var_t *) exec_prog(node,context); 
+    int operand = arg_data->i; 
+    switch(context){
+MATH_CASE(PLUS,*to_write += operand);
+MATH_CASE(OR,*to_write |= operand);
+MATH_CASE(AND,*to_write &= operand);
+MATH_CASE(NOT,*to_write = ~operand);
+MATH_CASE2(XOR, *to_write ^ operand);
+MATH_CASE(NEGATE ,*to_write = !operand);
+MATH_CASE(TIMES, *to_write *= operand);
+MATH_CASE2(MOD,*to_write % operand);
+MATH_CASE2(DIVIDE,*to_write / operand);
+MATH_CASE2(LESS ,*to_write < operand);
+MATH_CASE2(GREATER ,*to_write > operand);
+MATH_CASE2(LESSEQ , *to_write <= operand);
+MATH_CASE2(GREATEREQ , *to_write >= operand);
+MATH_CASE2(EQUALS ,*to_write == operand);
+MATH_CASE2(NOTEQUALS ,*to_write != operand);
+MATH_CASE(MINUS,switch(argc){
     case 0:
         *to_write = - operand;
         break;
@@ -49,17 +67,13 @@ MATH_FUNCTION(minus,0,switch(argc){
     default:
         *to_write = *to_write - operand;
 });
-MATH_FUNCTION(mod,0,*to_write = (argc == 0)?operand: *to_write % operand);
-MATH_FUNCTION(divide,0,*to_write = (argc == 0)?operand: *to_write / operand);
-MATH_FUNCTION(less,0,*to_write = (argc == 0)? operand: *to_write < operand);
-MATH_FUNCTION(greater,0,*to_write = (argc == 0)? operand: *to_write > operand);
-MATH_FUNCTION(le,0,*to_write = (argc == 0)? operand: *to_write <= operand);
-MATH_FUNCTION(ge,0,*to_write = (argc == 0)? operand: *to_write >= operand);
-MATH_FUNCTION(equals,0,*to_write = (argc == 0)? operand: *to_write == operand);
-MATH_FUNCTION(notequals,0,*to_write = (argc == 0)? operand: *to_write != operand);
+
+    }
+    s_pop(sizeof(struct var_t)); 
+}
 
 #define ASSIGN_FUNCTION(name,operation)\
-void do_##name(struct ast_node * node, void ** data, int argc, int context){\
+void do_##name(struct ast_node * node, struct var_t ** data, int argc, int context){\
     if(argc == 0){\
         /*get the address to write*/\
         *data = exec_prog(node,context);\
@@ -106,7 +120,7 @@ ASSIGN_FUNCTION(minusassign,-=);
 ASSIGN_FUNCTION(divassign,/=);
 
 /* get a string from stdin */
-void do_sread(struct ast_node * node, void ** data, int argc, int context){
+void do_sread(struct ast_node * node, struct var_t ** data, int argc, int context){
     /* get the head of the string stack */
     char * push_addr = s_str_push(0);
     /* don't let the string stack overflow */
@@ -120,27 +134,27 @@ void do_sread(struct ast_node * node, void ** data, int argc, int context){
         int len = strlen(push_addr);
         *(push_addr + len - 1) = 0;
         s_str_push(len);
-        *data = s_push(sizeof(struct var_t));
+        *data = push_var_t();
         struct var_t * str_var = (struct var_t *)*data; 
         str_var -> type = STRLIT;
         str_var -> s = push_addr;
     }
 
 }
-void do_strcmp(struct ast_node * node, void ** data, int argc, int context){
+void do_strcmp(struct ast_node * node, struct var_t ** data, int argc, int context){
     if(argc == 0){
         *data = exec_prog(node,context);
     }else{
         char * arg1 = ((struct var_t *)*data) -> s;
         char * arg2 = ((struct var_t *) exec_prog(node,context)) -> s;
-        struct var_t * to_push = s_push(sizeof(struct var_t));
+        struct var_t * to_push = push_var_t();
         to_push -> i = strcmp(arg1,arg2);
         to_push -> type = INT;
         *data = to_push;
     }
 }
 /* get arg at position as a string */
-void do_argv(struct ast_node * node, void ** data, int argc, int context){
+void do_argv(struct ast_node * node, struct var_t ** data, int argc, int context){
     if(argc == 0){
         int pos = ((struct var_t *) exec_prog(node, context)) -> i;
         char * to_push = PROG_ARGV[pos];
@@ -149,7 +163,7 @@ void do_argv(struct ast_node * node, void ** data, int argc, int context){
         char * push_addr = s_str_push(len);
         memcpy(push_addr,to_push,len);
         *(push_addr + len) = 0;
-        struct var_t * str_var = s_push(sizeof(struct var_t));
+        struct var_t * str_var = push_var_t();
         str_var -> s = push_addr;
         str_var -> type = STRLIT;
         *data = str_var;
@@ -157,15 +171,15 @@ void do_argv(struct ast_node * node, void ** data, int argc, int context){
 }
 
 /* get number of arguments */
-void do_argc(struct ast_node * node, void ** data, int argc, int context){
+void do_argc(struct ast_node * node, struct var_t ** data, int argc, int context){
     if(argc == 0){
-        *data = s_push(sizeof(struct var_t));
+        *data = push_var_t();
         ((struct var_t *) *data) -> i = PROG_ARGC;
         ((struct var_t *) *data) -> type = INT;
     }
 }
 /*quit the program with return code*/
-void do_exit(struct ast_node * node, void ** data, int argc, int context){
+void do_exit(struct ast_node * node, struct var_t ** data, int argc, int context){
     if(node == NULL){
         exit(0);
     }
@@ -173,7 +187,7 @@ void do_exit(struct ast_node * node, void ** data, int argc, int context){
     exit(exit_code);
 }
 
-void do_swrite(struct ast_node * node, void ** data, int argc, int context){
+void do_swrite(struct ast_node * node, struct var_t ** data, int argc, int context){
     if(node->is_atom && node->atom_child->token == ENDL){
         printf("\n");
     }else{
@@ -186,20 +200,24 @@ void do_swrite(struct ast_node * node, void ** data, int argc, int context){
             /* if the operator is pointing at an item in string memory
              * print its value as a string */
             printf("%s",arg_data -> s);
+        } else if (arg_data -> type == FLOAT){
+            /* if the operator is pointing at an item in string memory
+             * print its value as a string */
+            printf("%.2f",arg_data -> f);
         }
         s_pop(sizeof(struct var_t));
     }
     if(node->next == NULL){
-        struct var_t * n_written = s_push(sizeof(struct var_t));
+        struct var_t * n_written = push_var_t();
         n_written -> type = INT;
         n_written -> i = argc;
     }
 }
 
-void do_if(struct ast_node * node, void ** data, int argc, int context){
+void do_if(struct ast_node * node, struct var_t ** data, int argc, int context){
     if(argc == 0){
         //get the address to write
-        *data = s_push(sizeof(struct var_t));
+        *data = push_var_t();
         ((struct var_t *)*data) -> i =
             ((struct var_t *) exec_prog(node,context)) -> i;
         s_pop(sizeof(struct var_t));
@@ -218,10 +236,10 @@ void do_if(struct ast_node * node, void ** data, int argc, int context){
     }
 }
 
-void do_while(struct ast_node * node, void ** data, int argc, int context){
+void do_while(struct ast_node * node, struct var_t ** data, int argc, int context){
     if(argc == 0){
         //get the address to write
-        *data = s_push(sizeof(struct var_t));
+        *data = push_var_t();
         ((struct var_t *)*data) -> i =
             ((struct var_t *) exec_prog(node,context)) -> i;
         *(int *)*data = *(int *)exec_prog(node,context);
@@ -235,10 +253,10 @@ void do_while(struct ast_node * node, void ** data, int argc, int context){
     }
 }
 
-void do_toint(struct ast_node * node, void ** data, int argc, int context){
+void do_toint(struct ast_node * node, struct var_t ** data, int argc, int context){
     struct var_t * arg_data = exec_prog(node,context);
     char * operand = arg_data -> s;
-    *data = s_push(sizeof(struct var_t));
+    *data = push_var_t();
     struct var_t * int_var = (struct var_t *) *data;
     int_var -> i = atoi(operand);
     int_var -> type = INT;
@@ -258,29 +276,43 @@ int atoi_l(struct atom * atom_child){
     return value;
 }
 
+float atof_l(struct atom * atom_child){
+    float value;
+    char tmp_term;
+    char * str;
+    int len;
+    str = atom_child -> strval;
+    len = atom_child -> len;
+    tmp_term = *(str + len);
+    *(str + len) = '\0';
+    value = atof(str);
+    *(str + len) = tmp_term;
+    return value;
+}
 
-void (*operators[])(struct ast_node*,void**,int,int) = {
-    [PLUS] = do_sum,
-    [TIMES] = do_prod,
-    [MINUS] = do_minus,
-    [DIVIDE] = do_divide,
-    [MOD] = do_mod,
-    [OR] = do_or,
-    [AND] = do_and,
-    [NOT] = do_not,
-    [XOR] = do_xor,
-    [NEGATE] = do_negate,
+
+void (*operators[])(struct ast_node*,struct var_t **,int,int) = {
+    [PLUS] = do_math,
+    [TIMES] = do_math,
+    [MINUS] = do_math,
+    [DIVIDE] = do_math,
+    [MOD] = do_math,
+    [OR] = do_math,
+    [AND] = do_math,
+    [NOT] = do_math,
+    [XOR] = do_math,
+    [NEGATE] = do_math,
+    [LESS] = do_math,
+    [GREATER] = do_math,
+    [LESSEQ] = do_math,
+    [GREATEREQ] = do_math,
+    [EQUALS] = do_math,
+    [NOTEQUALS] = do_math,
     [ASSIGN] = do_assign,
     [PLUSASSIGN] = do_plusassign,
     [TIMESASSIGN] = do_timesassign,
     [MINUSASSIGN] = do_minusassign,
     [DIVASSIGN] = do_divassign,
-    [LESS] = do_less,
-    [GREATER] = do_greater,
-    [LESSEQ] = do_le,
-    [GREATEREQ] = do_ge,
-    [EQUALS] = do_equals,
-    [NOTEQUALS] = do_notequals,
     [WHILE] = do_while,
     [IF] = do_if,
     [ARGV] = do_argv,
@@ -294,9 +326,18 @@ void (*operators[])(struct ast_node*,void**,int,int) = {
 
 
 void * handle_int(struct atom * atom, int context){
-    struct var_t * data = s_push(sizeof(struct var_t));
+    struct var_t * data = push_var_t();
     data->i = atoi_l(atom);
+    data -> type = INT;
     return data;
+}
+
+void * handle_float(struct atom * atom, int context){
+    struct var_t * data = push_var_t();
+    data->f = atof_l(atom);
+    data -> type = FLOAT;
+    return data;
+
 }
 
 void * handle_id(struct atom * atom, int context){
@@ -319,14 +360,14 @@ void * handle_id(struct atom * atom, int context){
     }
 
     /* otherwise, copy it to the top of the stack */
-    struct var_t * index_copy = s_push(sizeof(struct var_t));
+    struct var_t * index_copy = push_var_t();
     memcpy(index_copy,index,sizeof(struct var_t));
     return index_copy;
 }
 
 #define ON_STACK -1
 void * handle_strlit(struct atom * atom, int context){
-    struct var_t * str_addr = s_push(sizeof(struct var_t));
+    struct var_t * str_addr = push_var_t();
     str_addr -> type = STRLIT;
     if(atom -> len == ON_STACK){
         /* point the char * union value of the var_t to the string */
@@ -347,15 +388,16 @@ void * handle_strlit(struct atom * atom, int context){
 
 void * (*atom_handlers[])(struct atom*,int) = {
     [INT] = handle_int,
+    [FLOAT] = handle_float,
     [ID] = handle_id,
     [STRLIT] = handle_strlit,
 };
 /* use void * return type to return arbitrary data
  * expect higher level node to know what to do with it
  */
-void * exec_prog(struct ast_node * node, int context){
+struct var_t * exec_prog(struct ast_node * node, int context){
     if(node->root_type && node->next != NULL){
-        void * data;
+        struct var_t * data;
         if(!node->next->is_atom){
             ERR("Tuples must start with command");
         } 
@@ -372,10 +414,13 @@ void * exec_prog(struct ast_node * node, int context){
             if(curr != NULL)
                 curr = curr->next;
             // special case for while loops: go back to the condition check node
-            int while_val = ((struct var_t *) data) -> i;
+            int while_val = data -> i;
             if(curr == NULL && cmd_atom -> token == WHILE && while_val){
                 curr = first_curr;
                 argc = 0;
+                // put the stack back in the right place
+                reset_stack();
+                push_var_t();
             }
         } while(curr != NULL);
 
