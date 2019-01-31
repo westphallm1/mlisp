@@ -7,7 +7,7 @@ while & prime < q n:
   +=q 1
 ;
 
-if ==prime 1:
+if == prime 1:
   write n "is prime!" endl
 else
   write n "is not prime..." endl

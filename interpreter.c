@@ -42,82 +42,74 @@ void do_math(struct ast_node * node, struct var_t ** data, int argc, int context
     struct var_t * arg_data = (struct var_t *) exec_prog(node,context); 
     int operand = arg_data->i; 
     switch(context){
-MATH_CASE(PLUS,*to_write += operand);
-MATH_CASE(OR,*to_write |= operand);
-MATH_CASE(AND,*to_write &= operand);
-MATH_CASE(NOT,*to_write = ~operand);
-MATH_CASE2(XOR, *to_write ^ operand);
-MATH_CASE(NEGATE ,*to_write = !operand);
-MATH_CASE(TIMES, *to_write *= operand);
-MATH_CASE2(MOD,*to_write % operand);
-MATH_CASE2(DIVIDE,*to_write / operand);
-MATH_CASE2(LESS ,*to_write < operand);
-MATH_CASE2(GREATER ,*to_write > operand);
-MATH_CASE2(LESSEQ , *to_write <= operand);
-MATH_CASE2(GREATEREQ , *to_write >= operand);
-MATH_CASE2(EQUALS ,*to_write == operand);
-MATH_CASE2(NOTEQUALS ,*to_write != operand);
-MATH_CASE(MINUS,switch(argc){
-    case 0:
-        *to_write = - operand;
-        break;
-    case 1:
-        *to_write = -*to_write - operand;
-        break;
-    default:
-        *to_write = *to_write - operand;
-});
-
+        MATH_CASE(PLUS,*to_write += operand);
+        MATH_CASE(OR,*to_write |= operand);
+        MATH_CASE(AND,*to_write &= operand);
+        MATH_CASE(NOT,*to_write = ~operand);
+        MATH_CASE(NEGATE ,*to_write = !operand);
+        MATH_CASE(TIMES, *to_write *= operand);
+        MATH_CASE2(XOR, *to_write ^ operand);
+        MATH_CASE2(MOD,*to_write % operand);
+        MATH_CASE2(DIVIDE,*to_write / operand);
+        MATH_CASE2(LESS ,*to_write < operand);
+        MATH_CASE2(GREATER ,*to_write > operand);
+        MATH_CASE2(LESSEQ , *to_write <= operand);
+        MATH_CASE2(GREATEREQ , *to_write >= operand);
+        MATH_CASE2(EQUALS ,*to_write == operand);
+        MATH_CASE2(NOTEQUALS ,*to_write != operand);
+        MATH_CASE(MINUS,switch(argc){
+            case 0:
+                *to_write = - operand;
+                break;
+            case 1:
+                *to_write = -*to_write - operand;
+                break;
+            default:
+                *to_write = *to_write - operand;
+        });
     }
     s_pop(sizeof(struct var_t)); 
 }
 
-#define ASSIGN_FUNCTION(name,operation)\
-void do_##name(struct ast_node * node, struct var_t ** data, int argc, int context){\
+void do_assign(struct ast_node * node, struct var_t ** data, int argc, int context){
     if(argc == 0){\
-        /*get the address to write*/\
-        *data = exec_prog(node,context);\
-    } else {\
-        /*write the address*/\
-        struct var_t * var = (struct var_t *)*data;\
-        if(node->is_atom){\
-            switch(node->atom_child->token){\
-                case INT:\
-                case FLOAT:\
-                case STRLIT:\
-                    var -> type = node->atom_child->token;\
-                default:\
-                    break;\
-            }\
-        }else {\
-            switch(node->list_child->root_type){\
-                case ARGV:\
-                case READ:\
-                    var -> type = STRLIT;\
-                    break;\
-                default:\
-                    break;\
-            }\
-        }\
-        struct var_t * new_value = (struct var_t *) exec_prog(node,PLUS); \
-        switch(var->type){\
-            case INT:\
-                var->i operation new_value -> i;\
-                break;\
-            case FLOAT:\
-                var->f operation new_value -> f;\
-                break;\
-            case STRLIT:\
-                var->s = new_value -> s;\
-                break;\
-        }\
-    }\
+        /*get the address to write*/
+        *data = exec_prog(node,context);
+    } else {
+        /* copy the result of the previous operation into the address */
+        char old_name[4];
+        struct var_t * new_value = exec_prog(node,PLUS);
+        /* preserve the name of the previous value */
+        memcpy(new_value->id, (*data)->id, 4);
+        memcpy(*data, new_value, sizeof(struct var_t));
+    }
 }
-ASSIGN_FUNCTION(assign,=);
-ASSIGN_FUNCTION(plusassign,+=);
-ASSIGN_FUNCTION(timesassign,*=);
-ASSIGN_FUNCTION(minusassign,-=);
-ASSIGN_FUNCTION(divassign,/=);
+
+#define CPDASSIGN_CASE(val,op) case val: \
+    switch((*data)->type){ \
+        case INT: \
+            (*data)->i op old_value.i; \
+            break; \
+        case FLOAT: \
+            (*data)->f op old_value.f; \
+            break; \
+    } \
+    break
+void do_compoundassign(struct ast_node * node, struct var_t ** data, int argc, int context){
+    struct var_t old_value;
+    struct var_t * old_ptr = &old_value;
+    if(argc == 0){
+        do_assign(node,data,argc,context);
+    } else {
+        do_assign(node,&old_ptr,argc,context);
+        switch(context){
+            CPDASSIGN_CASE(PLUSASSIGN,+=);
+            CPDASSIGN_CASE(MINUSASSIGN,-=);
+            CPDASSIGN_CASE(TIMESASSIGN,*=);
+            CPDASSIGN_CASE(DIVASSIGN,/=);
+        }
+    }
+}
 
 /* get a string from stdin */
 void do_sread(struct ast_node * node, struct var_t ** data, int argc, int context){
@@ -210,7 +202,8 @@ void do_swrite(struct ast_node * node, struct var_t ** data, int argc, int conte
     if(node->next == NULL){
         struct var_t * n_written = push_var_t();
         n_written -> type = INT;
-        n_written -> i = argc;
+        n_written -> i = argc + 1;
+        *data = n_written;
     }
 }
 
@@ -309,10 +302,10 @@ void (*operators[])(struct ast_node*,struct var_t **,int,int) = {
     [EQUALS] = do_math,
     [NOTEQUALS] = do_math,
     [ASSIGN] = do_assign,
-    [PLUSASSIGN] = do_plusassign,
-    [TIMESASSIGN] = do_timesassign,
-    [MINUSASSIGN] = do_minusassign,
-    [DIVASSIGN] = do_divassign,
+    [PLUSASSIGN] = do_compoundassign,
+    [TIMESASSIGN] = do_compoundassign,
+    [MINUSASSIGN] = do_compoundassign,
+    [DIVASSIGN] = do_compoundassign,
     [WHILE] = do_while,
     [IF] = do_if,
     [ARGV] = do_argv,
